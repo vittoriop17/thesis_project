@@ -25,8 +25,9 @@ logging.basicConfig(format='%(asctime)s - %(message)s',
 class SbertFineTuning:
     def __init__(self, silver_set_path, dev_set_path, test_set_path, dataset_name, scenario,
                  evaluation_only=False, bi_encoder_path=None, base_model=None):
+        os.chdir("models")
         logging.info("Start checking argument...")
-        self.sanity_check(dataset_name, scenario, bi_encoder_path, evaluation_only)
+        self.sanity_check(dataset_name, scenario, bi_encoder_path, evaluation_only, silver_set_path)
         logging.info("...check done")
         self.scenario = scenario
         self.dataset_name = dataset_name
@@ -39,9 +40,6 @@ class SbertFineTuning:
         self.max_seq_length = 128
         self.use_cuda = torch.cuda.is_available()
         self.silver_set_path = silver_set_path
-        if not os.path.exists((silver_set_path)):
-            print(f"Target dataset not found. Given path: {silver_set_path}")
-            exit(-1)
         # used to save the fine-tuned model
         self.bi_encoder_path = \
             os.path.join(dataset_name, f"scenario_{scenario}",
@@ -74,7 +72,7 @@ class SbertFineTuning:
             self.prepare_evaluator(dev=False)
             self.bi_encoder_model.evaluate(self.evaluator)
 
-    def sanity_check(self, dataset_name, scenario, bi_encoder_path, evaluation_only):
+    def sanity_check(self, dataset_name, scenario, bi_encoder_path, evaluation_only, silver_set_path):
         assert str.upper(dataset_name) in ['MRPC', 'STS', 'DISNEY'], \
             f"Invalid value for argument 'dataset_name'!, Expected one of these: MRPC, STS, DISNEY. Found {dataset_name}"
         assert scenario in [1, 2], f"Invalid value for argument 'scenario'. Expected 1 or 2. Found: {scenario}"
@@ -82,6 +80,7 @@ class SbertFineTuning:
             "Argument 'bi_encoder_path' required if 'evaluation_only==True'!"
         assert os.path.exists(bi_encoder_path) if evaluation_only else True, \
             f"Pre-trained bi-encoder model not found! Provided path: {bi_encoder_path}"
+        assert os.path.exists(silver_set_path), f"Target dataset not found. Given path: {silver_set_path}"
 
     def load_bi_encoder_model(self):
         logging.info("Loading bi-encoder model: {}".format(self.base_model))
@@ -144,7 +143,7 @@ class SbertFineTuning:
 
         # Train the bi-encoder model
         self.bi_encoder_model.fit(train_objectives=[(train_dataloader, train_loss)],
-                                  evaluator=evaluator,
+                                  evaluator=self.evaluator,
                                   epochs=self.num_epochs,
                                   evaluation_steps=1000,
                                   warmup_steps=warmup_steps,
@@ -157,9 +156,9 @@ class SbertFineTuning:
 
 
 if __name__ == '__main__':
-    silver_set_path = "..\\data\\STS\\silver_set_regression_cosine.tsv"
-    dev_set_path = "..\\data\\STS\\dev_set.tsv"
-    test_set_path = "..\\data\\STS\\test_set.tsv"
+    silver_set_path = "../data/STS/silver_set_regression_cosine.tsv"
+    dev_set_path = "../data/STS/dev_set.tsv"
+    test_set_path = "../data/STS/test_set.tsv"
 
     fine_tuner = SbertFineTuning(silver_set_path=silver_set_path,
                                  dev_set_path=dev_set_path,
