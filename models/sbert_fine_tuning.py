@@ -120,7 +120,7 @@ class SbertFineTuning:
             for row in reader:
                 sentences1.append(row['sentence_1'])
                 sentences2.append(row['sentence_2'])
-                labels.append(int(row['score']))  # Note: binary label
+                labels.append(int(float(row['score'])))  # Note: binary label
         self.evaluator = BinaryClassificationEvaluator(sentences1, sentences2, labels)
 
     def fine_tune_sbert(self):
