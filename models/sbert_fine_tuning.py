@@ -71,6 +71,7 @@ class SbertFineTuning:
             # Evaluate on test set
             self.prepare_evaluator(dev=False)
             self.bi_encoder_model.evaluate(self.evaluator)
+        os.chdir("..")
 
     def sanity_check(self, dataset_name, scenario, bi_encoder_path, evaluation_only, silver_set_path):
         assert str.upper(dataset_name) in ['MRPC', 'STS', 'DISNEY'], \

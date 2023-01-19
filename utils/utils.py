@@ -1,8 +1,12 @@
 import re
+
+import pandas as pd
 import spacy
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.linalg import norm
+import seaborn as sns
+import os
 
 
 # nlp = spacy.load("en_core_web_md")
@@ -73,3 +77,39 @@ def cosine_similarity(v1, v2):
 
 def euclidean_similarity(v1, v2):
     return np.linalg.norm(v1-v2)
+
+
+def countplot_sentence_scores(folder_path, train_filename, title):
+    """
+    Countplot where:
+    score 0: unrelated sentences;
+    score 1: related sentence.
+    In the same plot, there are the aggregated data coming from 3 different sources:
+    -training set;
+    -dev set;
+    -test set.
+    """
+    train_path, dev_path, test_path = os.path.join(folder_path, train_filename), \
+                                      os.path.join(folder_path, "dev_set.tsv"), \
+                                      os.path.join(folder_path, "test_set.tsv")
+    fig, ax = plt.subplots(1, 3)
+    df_train = pd.read_csv(train_path, sep='\t')
+    df_dev = pd.read_csv(dev_path, sep='\t')
+    df_test = pd.read_csv(test_path, sep='\t')
+    sns.set_style('darkgrid')
+    sns.countplot(x='score', data=binarize_scores(df_train), ax=ax[0]).set_title("Training set")
+    sns.countplot(x='score', data=binarize_scores(df_dev), ax=ax[1]).set_title("Dev set")
+    sns.countplot(x='score', data=binarize_scores(df_test), ax=ax[2]).set_title("Test set")
+    plt.show()
+
+
+def binarize_scores(df):
+    df.score = [1 if score > 0.5 else 0 for score in df.score]
+    return df
+
+if __name__ == '__main__':
+    # countplot_sentence_scores("..\\data\\STS", "silver_set_regression_cosine.tsv", None)
+    countplot_sentence_scores("..\\data\\MRPC", "silver_set_classification0.5_cosine.tsv", None)
+    breakpoint()
+
+
