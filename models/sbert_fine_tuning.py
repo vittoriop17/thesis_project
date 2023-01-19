@@ -157,9 +157,12 @@ class SbertFineTuning:
 
 
 if __name__ == '__main__':
-    silver_set_path = "../data/STS/silver_set_regression_cosine.tsv"
-    dev_set_path = "../data/STS/dev_set.tsv"
-    test_set_path = "../data/STS/test_set.tsv"
+    # silver_set_path = "../data/STS/silver_set_regression_cosine.tsv"
+    # dev_set_path = "../data/STS/dev_set.tsv"
+    # test_set_path = "../data/STS/test_set.tsv"
+    silver_set_path = "../data/MRPC/silver_set_classification0.5_cosine.tsv"
+    dev_set_path = "../data/MRPC/dev_set.tsv"
+    test_set_path = "../data/MRPC/test_set.tsv"
 
     fine_tuner = SbertFineTuning(silver_set_path=silver_set_path,
                                  dev_set_path=dev_set_path,
