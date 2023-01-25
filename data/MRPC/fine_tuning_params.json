@@ -1,0 +1,18 @@
+{
+  "silver_set_path": "data/MRPC/silver_set_classification0.5_cosine.tsv",
+  "dev_set_path": "data/MRPC/dev_set.tsv",
+  "test_set_path": "data/MRPC/test_set.tsv",
+  "dataset_name": "MRPC",
+  "scenario": 2,
+  "loss_type": "multiple_neg_ranking",
+  "evaluator_type": "binary",
+  "batch_size": 16,
+  "num_epochs": 5,
+  "max_seq_length": 128,
+  "evaluation_only": "False",
+  "bi_encoder_path": "None",
+  "base_model": "bert-base-uncased",
+  "task": "classification",
+  "strategy": "None",
+  "n_bins": "None"
+}

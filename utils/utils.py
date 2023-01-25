@@ -62,6 +62,8 @@ from sentence_transformers import SentenceTransformer
 #     print("Sentence:", sentence)
 #     print("Embedding:", embedding)
 #     print("")
+import argparse
+import json
 
 
 def sentence_len_distribution(df):
@@ -74,6 +76,7 @@ def sentence_len_distribution(df):
 
 def cosine_similarity(v1, v2):
     return np.dot(v1, v2) / (norm(v1) * norm(v2)) if norm(v1)!=0 and norm(v2)!=0 else 0
+
 
 def euclidean_similarity(v1, v2):
     return np.linalg.norm(v1-v2)
@@ -107,8 +110,73 @@ def binarize_scores(df):
     df.score = [1 if score > 0.5 else 0 for score in df.score]
     return df
 
+
+def upload_args(file_path="config.json"):
+    parser = argparse.ArgumentParser(description=f'Arguments from json')
+    parser.add_argument("--name", required=False, type=str, help="Name of the experiment "
+                                                                "(e.g.: 'evaluate preprocessing: recenter_wrt_frame' or"
+                                                                " 'test sequence length: 300')")
+    parser.add_argument("--n_epochs", required=False, type=int, help="Number of epochs")
+    parser.add_argument("--test_only", required=False, type=bool, help="Specify if only test is required")
+    parser.add_argument("--save_model", required=False, type=bool, default=False, help="Boolean flag: set it if you want to save the model")
+    parser.add_argument("--input_size", required=False, type=int, help="Input size of a singular time sample")
+    parser.add_argument("--hidden_size", required=False, type=int)
+    parser.add_argument("--train_only", required=False, type=bool, help="If True, apply only train. The Test score is evaluated at the end of the training. Otherwise, apply train and evaluation")
+    parser.add_argument("--num_layers", required=False, type=int)
+    parser.add_argument("--sequence_length", required=False, type=int)
+    parser.add_argument("--lr", required=False, type=float)
+    parser.add_argument("--batch_size", required=False, type=int)
+    parser.add_argument("--train", required=False, type=bool)
+    parser.add_argument("--video", required=False, type=str, help="Video path. Video used for evaluation of results")
+    parser.add_argument("--multitask", required=False, type=bool, help="Training the multitask network or the classificatio network")
+    parser.add_argument("--train_dataset_path", required=False, type=str, help="Train dataset path.")
+    parser.add_argument("--checkpoint_path", required=False, type=str, help="path to checkpoint")
+    parser.add_argument("--load_model", required=False, type=bool, help="Specify if load an existing model or not. If 'True', checkpoint_path must be specified as well")
+    parser.add_argument("--test_dataset_path", required=False, type=str, help="Test dataset path.")
+    parser.add_argument("--preprocess", required=False, type=str, help="Possible options: "
+                                                                       "recenter: apply centering by frame and normalization by coordinate "
+                                                                       "normalize: apply only normalization by coordinate "
+                                                                       "recenter_by_sequence: apply centering by frame considering the mean-center of the current sequence "
+                                                                       "... otherwise, do nothing (raw trajectories)")
+    parser.add_argument("--dropout", required=False, type=float, help="Network dropout.")
+    parser.add_argument("--alpha", required=False, type=float, help="Parameter for weighting the 2 losses (needed for training)")
+    parser.add_argument("--stride", required=False, type=float, help="Window stride (for sequence definition)."
+                                                                     "To be intended in relative terms (perc %).")
+    parser.add_argument("--with_conv", required=False, type=bool, help="Specify if use 1-D Convolution, in order"
+                                                                      " to preprocess the input sequences")
+    args = parser.parse_args()
+    args = upload_args_from_json(args, file_path)
+    print(args)
+    return args
+
+
+def upload_args_from_json(args, file_path="config.json"):
+    if args is None:
+        parser = argparse.ArgumentParser(description=f'Arguments from json')
+        args = parser.parse_args()
+    json_params = json.loads(open(file_path).read())
+    for option, option_value in json_params.items():
+        # do not override pre-existing arguments, if present.
+        # In other terms, the arguments passed through CLI have the priority
+        if hasattr(args, option) and getattr(args, option) is not None:
+            continue
+        if option_value == 'None':
+            option_value = None
+        if option_value == "True":
+            option_value = True
+        if option_value == "False":
+            option_value = False
+        setattr(args, option, option_value)
+    return args
+
+
+def save_args_to_json(dictionary, filepath):
+    with open(filepath, 'w') as f:
+        json.dump(dictionary, f, indent=4, sort_keys=True)
+
+
 if __name__ == '__main__':
-    # countplot_sentence_scores("..\\data\\STS", "silver_set_regression_cosine.tsv", None)
+    countplot_sentence_scores("..\\data\\STS", "silver_set_regression_cosine.tsv", None)
     countplot_sentence_scores("..\\data\\MRPC", "silver_set_classification0.5_cosine.tsv", None)
     breakpoint()
 

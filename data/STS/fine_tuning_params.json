@@ -1,0 +1,18 @@
+{
+  "silver_set_path": "data/STS/silver_set_regression_cosine.tsv",
+  "dev_set_path": "data/STS/dev_set.tsv",
+  "test_set_path": "data/STS/test_set.tsv",
+  "dataset_name": "STS",
+  "scenario": 2,
+  "loss_type": "softmax",
+  "evaluator_type": "multilabel_accuracy",
+  "batch_size": 16,
+  "num_epochs": 5,
+  "max_seq_length": 128,
+  "evaluation_only": "False",
+  "bi_encoder_path": "None",
+  "base_model": "bert-base-uncased",
+  "task": "classification",
+  "strategy": "quantile",
+  "n_bins": 5
+}
