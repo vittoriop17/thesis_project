@@ -111,41 +111,66 @@ def binarize_scores(df):
     return df
 
 
-def upload_args(file_path="config.json"):
-    parser = argparse.ArgumentParser(description=f'Arguments from json')
-    parser.add_argument("--name", required=False, type=str, help="Name of the experiment "
-                                                                "(e.g.: 'evaluate preprocessing: recenter_wrt_frame' or"
-                                                                " 'test sequence length: 300')")
-    parser.add_argument("--n_epochs", required=False, type=int, help="Number of epochs")
-    parser.add_argument("--test_only", required=False, type=bool, help="Specify if only test is required")
-    parser.add_argument("--save_model", required=False, type=bool, default=False, help="Boolean flag: set it if you want to save the model")
-    parser.add_argument("--input_size", required=False, type=int, help="Input size of a singular time sample")
-    parser.add_argument("--hidden_size", required=False, type=int)
-    parser.add_argument("--train_only", required=False, type=bool, help="If True, apply only train. The Test score is evaluated at the end of the training. Otherwise, apply train and evaluation")
-    parser.add_argument("--num_layers", required=False, type=int)
-    parser.add_argument("--sequence_length", required=False, type=int)
-    parser.add_argument("--lr", required=False, type=float)
-    parser.add_argument("--batch_size", required=False, type=int)
-    parser.add_argument("--train", required=False, type=bool)
-    parser.add_argument("--video", required=False, type=str, help="Video path. Video used for evaluation of results")
-    parser.add_argument("--multitask", required=False, type=bool, help="Training the multitask network or the classificatio network")
-    parser.add_argument("--train_dataset_path", required=False, type=str, help="Train dataset path.")
-    parser.add_argument("--checkpoint_path", required=False, type=str, help="path to checkpoint")
-    parser.add_argument("--load_model", required=False, type=bool, help="Specify if load an existing model or not. If 'True', checkpoint_path must be specified as well")
-    parser.add_argument("--test_dataset_path", required=False, type=str, help="Test dataset path.")
-    parser.add_argument("--preprocess", required=False, type=str, help="Possible options: "
-                                                                       "recenter: apply centering by frame and normalization by coordinate "
-                                                                       "normalize: apply only normalization by coordinate "
-                                                                       "recenter_by_sequence: apply centering by frame considering the mean-center of the current sequence "
-                                                                       "... otherwise, do nothing (raw trajectories)")
-    parser.add_argument("--dropout", required=False, type=float, help="Network dropout.")
-    parser.add_argument("--alpha", required=False, type=float, help="Parameter for weighting the 2 losses (needed for training)")
-    parser.add_argument("--stride", required=False, type=float, help="Window stride (for sequence definition)."
-                                                                     "To be intended in relative terms (perc %).")
-    parser.add_argument("--with_conv", required=False, type=bool, help="Specify if use 1-D Convolution, in order"
-                                                                      " to preprocess the input sequences")
+def upload_args(file_path=None):
+    parser = argparse.ArgumentParser(description=f'Sentence-BERT fine-tuning parameters')
+    parser.add_argument("--name", required=False, type=str, help="Name of the experiment")
+    # ----- SBERT FINE-TUNING PARAMETERS
+    parser.add_argument("--num_epochs", default=5, required=False, type=int,
+                        help="Number of epochs")
+    parser.add_argument("--scenario", required=False, type=int,
+                        choices=[1, 2],
+                        help="Fine tuning scenario. Valid options: 1, 2")
+    parser.add_argument("--loss_type", required=False, type=str,
+                        choices=['softmax', 'mse', 'cosine', 'multiple_neg_ranking'],
+                        help="Loss type used for the sentence-bert fine-tuning. "
+                             "Valid options: softmax, mse, cosine, multiple_neg_ranking")
+    parser.add_argument("--evaluator_type", required=False, type=str,
+                        choices=['binary', 'regression', 'multilabel_accuracy'],
+                        help="Evaluator type used for the evaluation of the sentence-bert model. "
+                             "Valid options: binary, regression, multilabel_accuracy")
+    parser.add_argument("--batch_size", default=16, required=False, type=int,
+                        help="Batch size used for sentence-bert fine-tuning.")
+    parser.add_argument("--max_seq_length", default=128, required=False, type=int,
+                        help="Max sequence length for sentence-bert input sentences. LOnger sentences will be truncated")
+    parser.add_argument("--base_model", required=False, type=str,
+                        help="Base sentence-bert model. See HuggingFace or sentence-transformers doc for available options")
+    parser.add_argument("--task", required=False, type=str,
+                        choices=['classification', 'regression'],
+                        help="Task type used for sentence-bert fine tuning. Valid options: 'classification', 'regression'")
+
+    # ----- DATASET INFO (name, paths, ...)
+    parser.add_argument("--silver_set_path", required=False, type=str,
+                        help="Train dataset path (with silver labels obtained with SIF model).")
+    parser.add_argument("--dataset_name", required=False, type=str,
+                        choices=['STS', 'MRPC', 'DISNEY'],
+                        help="Name of the dataset used for experiments. Valid options: STS, MRPC, DISNEY")
+    parser.add_argument("--dev_set_path", required=False, type=str,
+                        help="Validation dataset path (with real labels).")
+    parser.add_argument("--test_set_path", required=False, type=str,
+                        help="Test dataset path (with real labels).")
+
+    # ----- KBinsDiscretizer params (for STS and DISNEY datasets)
+    parser.add_argument("--strategy", required=False, type=str,
+                        choices=['uniform', 'quantile'],
+                        help="Strategy adopted for the KBinsDiscretizer (check sklearn doc). "
+                             "Accepted values: 'uniform' and 'quantile'. 'kmeans' not accepted.")
+    parser.add_argument("--n_bins", required=False, type=int,
+                        help="Number of bins used for score discretization (for KBinsDIscretizer)")
+
+    # ----- Additional parameters
+    parser.add_argument("--evaluation_only", action='store_true', required=False,
+                        help="Specify if only test is required")
+    parser.add_argument("--bi_encoder_path", required=False, type=str,
+                        help="Path to pre-trained bi-encoder. Used when evaluation_only is set to true")
+    parser.add_argument("--config_file_path", required=False, type=str,
+                        help="Path to the configuration file with arguments. "
+                             "It is an alternative to the command line arguments."
+                             "Be careful, the command line arguments"
+                             " have priority over the arguments indicated in the configuration file")
+
     args = parser.parse_args()
-    args = upload_args_from_json(args, file_path)
+    file_path = getattr(args, 'config_file_path') if getattr(args, 'config_file_path') is not None else file_path
+    args = upload_args_from_json(args, file_path) if file_path is not None else args
     print(args)
     return args
 

@@ -31,7 +31,7 @@ class SbertFineTuning:
     def __init__(self, silver_set_path, dev_set_path, test_set_path, dataset_name, scenario, loss_type,
                  evaluator_type, batch_size: int = 16, num_epochs: int = 1, max_seq_length: int = 128,
                  evaluation_only: bool = False, bi_encoder_path=None, base_model='bert-base-uncased',
-                 task='classification', strategy='quantile', n_bins=5):
+                 task='classification', strategy='quantile', n_bins=5, **kwargs):
         """
 
         :param silver_set_path:
@@ -60,7 +60,7 @@ class SbertFineTuning:
         os.chdir("models") if os.getcwd().endswith('ProjectCode') else None
         logging.info("Start checking argument...")
         self.sanity_check(dataset_name, scenario, bi_encoder_path, evaluation_only, silver_set_path, task, loss_type,
-                          evaluator_type)
+                          evaluator_type, strategy)
         logging.info("...check done")
         self.scenario = scenario
         self.dataset_name = dataset_name
@@ -88,30 +88,14 @@ class SbertFineTuning:
                                             "bi_encoder" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) \
             if evaluation_only == False else bi_encoder_path
         self.save_arguments()
-        # Load bi-encoder model
+        self.silver_data = []
+        self.silver_scores = []
+        self.binary_silver_scores = []
         self.bi_encoder_model = None
-        if evaluation_only:
-            self.bi_encoder_model = SentenceTransformer(self.bi_encoder_path)
-            self.prepare_evaluator(dev=False)
-            self.evaluate_sbert()
-        else:
-            # Read Silver Data
-            self.silver_data = []
-            self.silver_scores = []
-            self.binary_silver_scores = []
-            self.read_silver_set()
-            # Load bi-encoder
-            self.load_bi_encoder_model()
-            # Prepare evaluator (dev set for validation of hyperparameters; test set for final evaluation)
-            self.prepare_evaluator(dev=True)
-            self.fine_tune_sbert()
-            # Evaluate on test set
-            self.prepare_evaluator(dev=False)
-            self.bi_encoder_model.evaluate(self.evaluator)
-        os.chdir("..")
+        self.evaluation_only = evaluation_only
 
     def sanity_check(self, dataset_name, scenario, bi_encoder_path,
-                     evaluation_only, silver_set_path, task, loss_type, evaluator_type):
+                     evaluation_only, silver_set_path, task, loss_type, evaluator_type, strategy):
         assert str.upper(dataset_name) in ['MRPC', 'STS', 'DISNEY'], \
             f"Invalid value for argument 'dataset_name'!, Expected one of these: MRPC, STS, DISNEY. Found {dataset_name}"
         assert scenario in [1, 2], f"Invalid value for argument 'scenario'. Expected 1 or 2. Found: {scenario}"
@@ -130,6 +114,9 @@ class SbertFineTuning:
         assert loss_type in self.valid_losses_dict.keys(), f"Invalid value for argument 'loss'. " \
                                                            f"Expected one of the following: {self.valid_losses_dict.keys()}. " \
                                                            f"Found: {loss_type}"
+        assert strategy in ['quantile', 'uniform', None], f"Invalid value for argument 'strategy'. " \
+                                                          f"Expected one of the following: 'quantile', 'uniform', None" \
+                                                          f"Found: {strategy}"
         assert evaluator_type in self.valid_evaluators_dict.keys(), \
             f"Invalid value for argument 'evaluator_type'. " \
             f"Expected one of the following: {self.valid_evaluators_dict.keys()}. " \
@@ -274,8 +261,17 @@ class SbertFineTuning:
         train_loss = self.loss(model=self.bi_encoder_model)
         return (train_dataloader, train_loss)
 
-    def evaluate_sbert(self):
+    def evaluate_sbert(self, dev=True):
         logging.info("Starting evaluation on test data...\n")
+        if self.evaluation_only:
+            logging.info("Evaluation only. Pre-trained bi-encoder will be evaluated without fine tuning")
+            self.bi_encoder_model = SentenceTransformer(self.bi_encoder_path)
+            self.prepare_evaluator(dev=False)
+        else:
+            self.prepare_evaluator(dev=dev)
+        if self.bi_encoder_model is None:
+            logging.error("Bi-encoder model not found.")
+            return
         self.bi_encoder_model.evaluate(self.evaluator)
 
 
