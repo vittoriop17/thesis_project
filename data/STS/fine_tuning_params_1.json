@@ -4,15 +4,13 @@
   "test_set_path": "data/STS/test_set.tsv",
   "dataset_name": "STS",
   "scenario": 2,
-  "loss_type": "softmax",
-  "evaluator_type": "multilabel_accuracy",
+  "loss_type": "cosine",
+  "evaluator_type": "regression",
   "batch_size": 16,
   "num_epochs": 5,
   "max_seq_length": 128,
   "evaluation_only": "False",
   "bi_encoder_path": "None",
   "base_model": "bert-base-uncased",
-  "task": "classification",
-  "strategy": "quantile",
-  "n_bins": 5
+  "task": "regression"
 }
