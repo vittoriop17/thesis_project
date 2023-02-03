@@ -258,7 +258,12 @@ class SbertFineTuning:
         train_data = list(InputExample(texts=[data[0], data[1]], label=score)
                           for (data, score) in zip(self.silver_data, app_scores))
         train_dataloader = DataLoader(train_data, shuffle=True, batch_size=self.batch_size)
-        train_loss = self.loss(model=self.bi_encoder_model)
+        if self.loss_type == 'softmax':
+            train_loss = self.loss(model=self.bi_encoder_model,
+                                   sentence_embedding_dimension=self.max_seq_length,
+                                   num_labels=self.n_bins)
+        else:
+            train_loss = self.loss(model=self.bi_encoder_model)
         return (train_dataloader, train_loss)
 
     def evaluate_sbert(self, dev=True):
