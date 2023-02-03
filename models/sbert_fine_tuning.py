@@ -201,7 +201,7 @@ class SbertFineTuning:
         :return:
         """
         self.kbins_discretizer = KBinsDiscretizer(n_bins=self.n_bins, encode='ordinal', strategy=self.strategy)
-        self.silver_scores = self.kbins_discretizer.fit_transform(np.reshape(self.silver_scores, (-1, 1)))
+        self.silver_scores = self.kbins_discretizer.fit_transform(np.reshape(self.silver_scores, (-1, )))
 
     def prepare_evaluator(self, dev=True):
         logging.info(f"Preparing evaluator (for model validation). Data from {'dev set' if dev else 'test set'}")
