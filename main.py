@@ -3,7 +3,7 @@ from utils.utils import *
 
 
 def main(args):
-    fine_tuner = sbert_fine_tuning.SbertFineTuning(**args)
+    fine_tuner = sbert_fine_tuning.SbertFineTuning(**vars(args))
     fine_tuner.read_silver_set()
     fine_tuner.load_bi_encoder_model()
     # Prepare evaluator (dev set for validation of hyperparameters; test set for final evaluation)
