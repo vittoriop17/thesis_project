@@ -100,23 +100,6 @@ ssp_train_data = list \
 train_dataloader = DataLoader(ssp_train_data, shuffle=True, batch_size=batch_size)
 train_loss = losses.MultipleNegativesRankingLoss(bi_encoder)
 
-###### Classification ######
-# Given (sentence1, sentence2), is this a duplicate or not?
-# The evaluator will compute the embeddings for both questions and then compute
-# a cosine similarity. If the similarity is above a threshold, we have a duplicate.
-# TODO - after labeling some sentences_wo_punct (cluster info) include the validation step
-# logging.info("Read SSP dev dataset")
-#
-# dev_sentences1 = []
-# dev_sentences2 = []
-# dev_labels = []
-#
-# with open(os.path.join(qqp_dataset_path, "classification/dev_pairs.tsv"), encoding='utf8') as fIn:
-#     reader = csv.DictReader(fIn, delimiter='\t', quoting=csv.QUOTE_NONE)
-#     for row in reader:
-#         dev_sentences1.append(row['question1'])
-#         dev_sentences2.append(row['question2'])
-#         dev_labels.append(int(row['is_duplicate']))
 
 # Configure the training.
 warmup_steps = math.ceil(len(train_dataloader) * num_epochs * 0.1)  # 10% of train data for warm-up
@@ -129,27 +112,4 @@ bi_encoder.fit(train_objectives=[(train_dataloader, train_loss)],
                output_path=bi_encoder_path
                )
 
-###############################################################
-#
-# Evaluate Augmented SBERT performance on QQP benchmark dataset
-#
-###############################################################
 
-# TODO - add test assessment
-# Loading the augmented sbert model
-# bi_encoder = SentenceTransformer(bi_encoder_path)
-#
-# logging.info("Read QQP test dataset")
-# test_sentences1 = []
-# test_sentences2 = []
-# test_labels = []
-#
-# with open(os.path.join(qqp_dataset_path, "classification/test_pairs.tsv"), encoding='utf8') as fIn:
-#     reader = csv.DictReader(fIn, delimiter='\t', quoting=csv.QUOTE_NONE)
-#     for row in reader:
-#         test_sentences1.append(row['question1'])
-#         test_sentences2.append(row['question2'])
-#         test_labels.append(int(row['is_duplicate']))
-#
-# evaluator = BinaryClassificationEvaluator(test_sentences1, test_sentences2, test_labels)
-# bi_encoder.evaluate(evaluator)
