@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from sentence_transformers import models, losses, util, LoggingHandler, SentenceTransformer
+from sentence_transformers import models, losses, util, LoggingHandler, SentenceTransformer, SentencesDataset
 from sentence_transformers.cross_encoder import CrossEncoder
 from sentence_transformers.cross_encoder.evaluation import CECorrelationEvaluator
 from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator, BinaryClassificationEvaluator, \
@@ -257,12 +257,14 @@ class SbertFineTuning:
         app_scores = self.binary_silver_scores if self.dataset_name == 'MRPC' else self.silver_scores
         train_data = list(InputExample(texts=[data[0], data[1]], label=score)
                           for (data, score) in zip(self.silver_data, app_scores))
-        train_dataloader = DataLoader(train_data, shuffle=True, batch_size=self.batch_size)
         if self.loss_type == 'softmax':
+            train_dataset = SentencesDataset(train_data, self.bi_encoder_model)
+            train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=self.batch_size)
             train_loss = self.loss(model=self.bi_encoder_model,
                                    sentence_embedding_dimension=self.max_seq_length,
                                    num_labels=self.n_bins)
         else:
+            train_dataloader = DataLoader(train_data, shuffle=True, batch_size=self.batch_size)
             train_loss = self.loss(model=self.bi_encoder_model)
         return (train_dataloader, train_loss)
 
