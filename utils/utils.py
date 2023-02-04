@@ -121,9 +121,9 @@ def upload_args(file_path=None):
                         choices=[1, 2],
                         help="Fine tuning scenario. Valid options: 1, 2")
     parser.add_argument("--loss_type", required=False, type=str,
-                        choices=['softmax', 'mse', 'cosine', 'multiple_neg_ranking'],
+                        choices=['softmax', 'cosine', 'multiple_neg_ranking'],
                         help="Loss type used for the sentence-bert fine-tuning. "
-                             "Valid options: softmax, mse, cosine, multiple_neg_ranking")
+                             "Valid options: softmax, cosine, multiple_neg_ranking")
     parser.add_argument("--evaluator_type", required=False, type=str,
                         choices=['binary', 'regression', 'multilabel_accuracy'],
                         help="Evaluator type used for the evaluation of the sentence-bert model. "

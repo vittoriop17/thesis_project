@@ -49,7 +49,7 @@ class SbertFineTuning:
         self.valid_losses_dict = {
             'softmax': SoftmaxLoss,  # for multilabel classification (similarity with discretized scores: STS)
             'cosine': CosineSimilarityLoss,  # for regression (similarity: STS)
-            'mse': MSELoss,  # for regression (similarity: STS)
+            # 'mse': MSELoss,  # for regression (similarity: STS) -- NOT VALID
             'multiple_neg_ranking': MultipleNegativesRankingLoss  # for binary classification (paraphrase: MRPC)
         }
         self.valid_evaluators_dict = {
@@ -121,8 +121,8 @@ class SbertFineTuning:
             f"Invalid value for argument 'evaluator_type'. " \
             f"Expected one of the following: {self.valid_evaluators_dict.keys()}. " \
             f"Found: {evaluator_type}"
-        assert loss_type in ['cosine', 'mse'] if dataset_name == 'STS' and task == 'regression' else True, \
-            f"Invalid value for argument 'loss'. Expected one of these: 'cosine', 'mse' when " \
+        assert loss_type in ['cosine'] if dataset_name == 'STS' and task == 'regression' else True, \
+            f"Invalid value for argument 'loss'. Expected one of these: 'cosine' when " \
             f"using STS dataset and regression task. Found: {loss_type}"
         assert loss_type == 'softmax' if dataset_name == 'STS' and task == 'classification' else True, \
             f"Invalid value for argument 'loss'. Expected 'softmax' when using STS dataset and " \
@@ -201,7 +201,7 @@ class SbertFineTuning:
         :return:
         """
         self.kbins_discretizer = KBinsDiscretizer(n_bins=self.n_bins, encode='ordinal', strategy=self.strategy)
-        self.silver_scores = self.kbins_discretizer.fit_transform(np.reshape(self.silver_scores, (-1, )))
+        self.silver_scores = self.kbins_discretizer.fit_transform(np.reshape(self.silver_scores, (-1, 1)))
 
     def prepare_evaluator(self, dev=True):
         logging.info(f"Preparing evaluator (for model validation). Data from {'dev set' if dev else 'test set'}")
@@ -233,7 +233,7 @@ class SbertFineTuning:
         Apply sbert fine-tuning, using the pre-loaded silver set
         :return:
         """
-        logging.info(f"Fine tune bi-encoder: over labeled Silver Set ({self.dataset_name}), using binary scores")
+        logging.info(f"Fine tune bi-encoder: over labeled Silver Set ({self.dataset_name})")
         (train_dataloader, train_loss) = self.get_training_objectives()
         # Configure the training.
         # warmup_steps - training configuration taken from augSBERT

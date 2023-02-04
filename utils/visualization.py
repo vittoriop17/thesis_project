@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import plotly.express as px
 from sklearn.manifold import TSNE
-import seaborn as sns
 
 # check https://plotly.com/python/t-sne-and-umap-projections/ for plotly implementation
 
