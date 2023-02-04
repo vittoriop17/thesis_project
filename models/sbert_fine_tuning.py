@@ -72,6 +72,7 @@ class SbertFineTuning:
         self.loss = self.valid_losses_dict[str.lower(loss_type)]
         self.loss_type = loss_type
         self.evaluator = self.valid_evaluators_dict[evaluator_type]
+        self.test_evaluator = self.valid_evaluators_dict[evaluator_type]
         self.evaluator_type = evaluator_type
         # arguments for kbins_discretizer (used only for STS dataset solved as classification task
         self.strategy = strategy if dataset_name == 'STS' and task == 'classification' else None
@@ -93,6 +94,7 @@ class SbertFineTuning:
         self.binary_silver_scores = []
         self.bi_encoder_model = None
         self.evaluation_only = evaluation_only
+        self.softmax_loss = None
 
     def sanity_check(self, dataset_name, scenario, bi_encoder_path,
                      evaluation_only, silver_set_path, task, loss_type, evaluator_type, strategy):
@@ -225,9 +227,35 @@ class SbertFineTuning:
                 data_ = list(InputExample(texts=[s1, s2], label=score)
                              for (s1, s2, score) in zip(sentences1, sentences2, labels))
                 data_loader = DataLoader(data_, shuffle=True, batch_size=self.batch_size)
-                self.evaluator = self.evaluator(data_loader, name='Dev set' if dev else 'test set', softmax_model=softmax_loss)
+                self.evaluator = self.evaluator(data_loader, name='Dev set' if dev else 'test set',
+                                                softmax_model=softmax_loss)
         else:
             self.evaluator = self.evaluator(sentences1, sentences2, labels, name='Dev set' if dev else 'test set')
+
+    def prepare_test_evaluator(self):
+        logging.info(f"Preparing test evaluator")
+        sentences1 = []
+        sentences2 = []
+        labels = []
+        eval_data_path = self.test_set_path
+        with open(eval_data_path, encoding='utf8') as fin:
+            reader = csv.DictReader(fin, delimiter='\t', quoting=csv.QUOTE_NONE)
+            for row in reader:
+                sentences1.append(row['sentence_1'])
+                sentences2.append(row['sentence_2'])
+                if self.dataset_name == 'STS':
+                    labels.append(float(row['score']))
+                else:
+                    labels.append(int(float(row['score'])))  # Note: binary label
+        if self.dataset_name == 'STS' and self.task == 'classification':
+            labels = self.kbins_discretizer.transform(np.reshape(labels, (-1, 1))).reshape(-1)
+            if self.evaluator_type == 'multilabel_accuracy':
+                data_ = list(InputExample(texts=[s1, s2], label=score)
+                             for (s1, s2, score) in zip(sentences1, sentences2, labels))
+                data_loader = DataLoader(data_, shuffle=True, batch_size=self.batch_size)
+                self.test_evaluator = self.test_evaluator(data_loader, name='test set', softmax_model=self.softmax_loss)
+        else:
+            self.test_evaluator = self.test_evaluator(sentences1, sentences2, labels, name='test set')
 
     def fine_tune_sbert(self):
         """
@@ -265,23 +293,20 @@ class SbertFineTuning:
             train_loss = self.loss(model=self.bi_encoder_model,
                                    sentence_embedding_dimension=768,
                                    num_labels=self.n_bins)
+            self.softmax_loss = train_loss
         else:
             train_dataloader = DataLoader(train_data, shuffle=True, batch_size=self.batch_size)
             train_loss = self.loss(model=self.bi_encoder_model)
         return (train_dataloader, train_loss)
 
-    def evaluate_sbert(self, dev=True):
+    def evaluate_sbert(self):
         logging.info("Starting evaluation on test data...\n")
-        if self.evaluation_only:
-            logging.info("Evaluation only. Pre-trained bi-encoder will be evaluated without fine tuning")
-            self.bi_encoder_model = SentenceTransformer(self.bi_encoder_path)
-            self.prepare_evaluator(dev=False)
-        else:
-            self.prepare_evaluator(dev=dev)
-        if self.bi_encoder_model is None:
-            logging.error("Bi-encoder model not found.")
-            return
-        self.bi_encoder_model.evaluate(self.evaluator)
+        if self.loss_type == 'softmax':
+            self.softmax_loss = self.loss(model=self.bi_encoder_model,
+                                          sentence_embedding_dimension=768,
+                                          num_labels=self.n_bins) if self.softmax_loss is None else self.softmax_loss
+        self.prepare_test_evaluator()
+        self.bi_encoder_model.evaluate(self.test_evaluator)
 
 
 if __name__ == '__main__':
