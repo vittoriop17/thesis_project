@@ -204,7 +204,7 @@ class SbertFineTuning:
         self.silver_scores = self.kbins_discretizer.fit_transform(np.reshape(self.silver_scores, (-1, 1)))
         self.silver_scores = self.silver_scores.astype('int64')
 
-    def prepare_evaluator(self, dev=True):
+    def prepare_evaluator(self, dev=True, softmax_loss=None):
         logging.info(f"Preparing evaluator (for model validation). Data from {'dev set' if dev else 'test set'}")
         sentences1 = []
         sentences2 = []
@@ -225,7 +225,7 @@ class SbertFineTuning:
                 data_ = list(InputExample(texts=[s1, s2], label=score)
                              for (s1, s2, score) in zip(sentences1, sentences2, labels))
                 data_loader = DataLoader(data_, shuffle=True, batch_size=self.batch_size)
-                self.evaluator = self.evaluator(data_loader, name='Dev set' if dev else 'test set', softmax_model=self.bi_encoder_model)
+                self.evaluator = self.evaluator(data_loader, name='Dev set' if dev else 'test set', softmax_model=softmax_loss)
         else:
             self.evaluator = self.evaluator(sentences1, sentences2, labels, name='Dev set' if dev else 'test set')
 
@@ -236,6 +236,7 @@ class SbertFineTuning:
         """
         logging.info(f"Fine tune bi-encoder: over labeled Silver Set ({self.dataset_name})")
         (train_dataloader, train_loss) = self.get_training_objectives()
+        self.prepare_evaluator(dev=True, softmax_loss=train_loss)
         # Configure the training.
         # warmup_steps - training configuration taken from augSBERT
         warmup_steps = math.ceil(len(train_dataloader) * self.num_epochs * 0.1)  # 10% of train data for warm-up
