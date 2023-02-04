@@ -225,7 +225,7 @@ class SbertFineTuning:
                 data_ = list(InputExample(texts=[s1, s2], label=score)
                              for (s1, s2, score) in zip(sentences1, sentences2, labels))
                 data_loader = DataLoader(data_, shuffle=True, batch_size=self.batch_size)
-                self.evaluator(data_loader, name='Dev set' if dev else 'test set')
+                self.evaluator = self.evaluator(data_loader, name='Dev set' if dev else 'test set')
         else:
             self.evaluator = self.evaluator(sentences1, sentences2, labels, name='Dev set' if dev else 'test set')
 
