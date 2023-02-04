@@ -202,6 +202,7 @@ class SbertFineTuning:
         """
         self.kbins_discretizer = KBinsDiscretizer(n_bins=self.n_bins, encode='ordinal', strategy=self.strategy)
         self.silver_scores = self.kbins_discretizer.fit_transform(np.reshape(self.silver_scores, (-1, 1)))
+        self.silver_scores = self.silver_scores.astype('int64')
 
     def prepare_evaluator(self, dev=True):
         logging.info(f"Preparing evaluator (for model validation). Data from {'dev set' if dev else 'test set'}")
@@ -261,7 +262,7 @@ class SbertFineTuning:
             train_dataset = SentencesDataset(train_data, self.bi_encoder_model)
             train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=self.batch_size)
             train_loss = self.loss(model=self.bi_encoder_model,
-                                   sentence_embedding_dimension=self.max_seq_length,
+                                   sentence_embedding_dimension=768,
                                    num_labels=self.n_bins)
         else:
             train_dataloader = DataLoader(train_data, shuffle=True, batch_size=self.batch_size)
