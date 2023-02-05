@@ -294,6 +294,9 @@ class SbertFineTuning:
         app_scores = self.binary_silver_scores if self.dataset_name == 'MRPC' else self.silver_scores
         train_data = list(InputExample(texts=[data[0], data[1]], label=score)
                           for (data, score) in zip(self.silver_data, app_scores))
+        if self.loss_type == 'multiple_neg_ranking':  # remove all the sentences with score 0. See sbert multiple negative ranking loss
+            train_data = list(filter(lambda x: x.label == 1, train_data))
+            print(f"Number of training sentence pairs after filtering unrelated sentences: {len(train_data)}")
         if self.loss_type == 'softmax':
             train_dataset = SentencesDataset(train_data, self.bi_encoder_model)
             train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=self.batch_size)
