@@ -21,7 +21,6 @@ from sklearn.preprocessing import KBinsDiscretizer
 from sentence_transformers.losses import SoftmaxLoss, MSELoss, MultipleNegativesRankingLoss, CosineSimilarityLoss, ContrastiveLoss
 from utils import *
 
-
 #### Just some code to print debug information to stdout
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -91,6 +90,9 @@ class SbertFineTuning:
         self.bi_encoder_path = os.path.join(dataset_name, f"scenario_{scenario}",
                                             "bi_encoder" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) \
             if evaluation_only == False else bi_encoder_path
+        os.makedirs(self.bi_encoder_path, exist_ok=True)
+        fh = logging.FileHandler(os.path.join(self.bi_encoder_path, "fine_tuning.log"))
+        logging.getLogger("fine_tuner").addHandler(fh)
         self.save_arguments()
         self.silver_data = []
         self.silver_scores = []
@@ -316,7 +318,7 @@ class SbertFineTuning:
                                           sentence_embedding_dimension=768,
                                           num_labels=self.n_bins) if self.softmax_loss is None else self.softmax_loss
         self.prepare_test_evaluator()
-        self.bi_encoder_model.evaluate(self.test_evaluator)
+        self.bi_encoder_model.evaluate(self.test_evaluator, output_path="tmp_test")
 
 
 if __name__ == '__main__':
