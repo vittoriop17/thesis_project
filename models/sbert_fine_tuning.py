@@ -18,7 +18,9 @@ import os
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import KBinsDiscretizer
-from sentence_transformers.losses import SoftmaxLoss, MSELoss, MultipleNegativesRankingLoss, CosineSimilarityLoss
+from sentence_transformers.losses import SoftmaxLoss, MSELoss, MultipleNegativesRankingLoss, CosineSimilarityLoss, ContrastiveLoss
+from utils import *
+
 
 #### Just some code to print debug information to stdout
 logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -50,7 +52,8 @@ class SbertFineTuning:
             'softmax': SoftmaxLoss,  # for multilabel classification (similarity with discretized scores: STS)
             'cosine': CosineSimilarityLoss,  # for regression (similarity: STS)
             # 'mse': MSELoss,  # for regression (similarity: STS) -- NOT VALID
-            'multiple_neg_ranking': MultipleNegativesRankingLoss  # for binary classification (paraphrase: MRPC)
+            'multiple_neg_ranking': MultipleNegativesRankingLoss,  # for binary classification (paraphrase: MRPC)
+            'contrastive': ContrastiveLoss  # for binary classification (paraphrase: MRPC)
         }
         self.valid_evaluators_dict = {
             'binary': BinaryClassificationEvaluator,
@@ -95,6 +98,7 @@ class SbertFineTuning:
         self.bi_encoder_model = None
         self.evaluation_only = evaluation_only
         self.softmax_loss = None
+        self.test_evaluator_flag = False
 
     def sanity_check(self, dataset_name, scenario, bi_encoder_path,
                      evaluation_only, silver_set_path, task, loss_type, evaluator_type, strategy):
@@ -129,8 +133,8 @@ class SbertFineTuning:
         assert loss_type == 'softmax' if dataset_name == 'STS' and task == 'classification' else True, \
             f"Invalid value for argument 'loss'. Expected 'softmax' when using STS dataset and " \
             f"classification task. Found: {loss_type}"
-        assert loss_type == "multiple_neg_ranking" if dataset_name == 'MRPC' else True, \
-            f"Invalid value for argument 'loss'. Expected 'multiple_neg_ranking' when using MRPC " \
+        assert loss_type in ["multiple_neg_ranking", "contrastive"] if dataset_name == 'MRPC' else True, \
+            f"Invalid value for argument 'loss'. Expected 'multiple_neg_ranking' or 'contrastive' when using MRPC " \
             f"dataset. Found: {loss_type}"
         assert evaluator_type == 'binary' if dataset_name == 'MRPC' else True, \
             f"Invalid value for argument 'evaluator_type'. Expected 'binary' when using MRPC " \
@@ -190,7 +194,7 @@ class SbertFineTuning:
                     self.binary_silver_scores.append(1 if score >= 0.5 else 0)
         else:
             # TODO - implement dataset preparation for scenario 1
-            print("Read silver set for scenario 2 not implemented!")
+            print("Read silver set for scenario 1 not implemented!")
             exit(-10)
         # if task == regression, then the scores are already stored inside self.silver_scores
         # if task == classification, then the scores are discretized. Stored inside self.silver_scores, again
@@ -233,6 +237,8 @@ class SbertFineTuning:
             self.evaluator = self.evaluator(sentences1, sentences2, labels, name='Dev set' if dev else 'test set')
 
     def prepare_test_evaluator(self):
+        if self.test_evaluator_flag:
+            return
         logging.info(f"Preparing test evaluator")
         sentences1 = []
         sentences2 = []
@@ -256,6 +262,7 @@ class SbertFineTuning:
                 self.test_evaluator = self.test_evaluator(data_loader, name='test set', softmax_model=self.softmax_loss)
         else:
             self.test_evaluator = self.test_evaluator(sentences1, sentences2, labels, name='test set')
+        self.test_evaluator_flag = True
 
     def fine_tune_sbert(self):
         """

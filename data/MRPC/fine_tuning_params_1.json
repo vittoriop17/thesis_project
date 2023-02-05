@@ -4,7 +4,7 @@
   "test_set_path": "data/MRPC/test_set.tsv",
   "dataset_name": "MRPC",
   "scenario": 1,
-  "loss_type": "multiple_neg_ranking",
+  "loss_type": "contrastive",
   "evaluator_type": "binary",
   "batch_size": 16,
   "num_epochs": 5,

@@ -8,7 +8,6 @@ from numpy.linalg import norm
 import seaborn as sns
 import os
 
-
 # nlp = spacy.load("en_core_web_md")
 #
 # tag_re = re.compile(r"<(.).*\/(\1)>")
@@ -75,11 +74,11 @@ def sentence_len_distribution(df):
 
 
 def cosine_similarity(v1, v2):
-    return np.dot(v1, v2) / (norm(v1) * norm(v2)) if norm(v1)!=0 and norm(v2)!=0 else 0
+    return np.dot(v1, v2) / (norm(v1) * norm(v2)) if norm(v1) != 0 and norm(v2) != 0 else 0
 
 
 def euclidean_similarity(v1, v2):
-    return np.linalg.norm(v1-v2)
+    return np.linalg.norm(v1 - v2)
 
 
 def countplot_sentence_scores(folder_path, train_filename, title):
@@ -121,9 +120,9 @@ def upload_args(file_path=None):
                         choices=[1, 2],
                         help="Fine tuning scenario. Valid options: 1, 2")
     parser.add_argument("--loss_type", required=False, type=str,
-                        choices=['softmax', 'cosine', 'multiple_neg_ranking'],
+                        choices=['softmax', 'cosine', 'contrastive', 'multiple_neg_ranking'],
                         help="Loss type used for the sentence-bert fine-tuning. "
-                             "Valid options: softmax, cosine, multiple_neg_ranking")
+                             "Valid options: softmax, cosine, multiple_neg_ranking, contrastive")
     parser.add_argument("--evaluator_type", required=False, type=str,
                         choices=['binary', 'regression', 'multilabel_accuracy'],
                         help="Evaluator type used for the evaluation of the sentence-bert model. "
@@ -204,5 +203,3 @@ if __name__ == '__main__':
     countplot_sentence_scores("..\\data\\STS", "silver_set_regression_cosine.tsv", None)
     countplot_sentence_scores("..\\data\\MRPC", "silver_set_classification0.5_cosine.tsv", None)
     breakpoint()
-
-
