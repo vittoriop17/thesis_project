@@ -174,7 +174,8 @@ class SbertFineTuning:
         logging.info("Loading bi-encoder model: {}".format(self.base_model))
         if from_file and self.bi_encoder_path is not None:
             logging.info(f"Loading pre-trained bi-encoder from path {self.bi_encoder_path}")
-            self.bi_encoder_model = SentenceTransformer(self.bi_encoder_path)
+            self.bi_encoder_model = SentenceTransformer(self.bi_encoder_path,
+                                                        device="cuda" if torch.cuda.is_available() else "cpu")
             return
         # Use Huggingface/transformers model (like BERT, RoBERTa, XLNet, XLM-R) for mapping tokens to embeddings
         word_embedding_model = models.Transformer(self.base_model, max_seq_length=self.max_seq_length)
@@ -310,7 +311,8 @@ class SbertFineTuning:
 
     def evaluate_sbert(self, load_finetuned=False):
         logging.info("Starting evaluation on test data...\n")
-        self.load_bi_encoder_model(from_file=load_finetuned)
+        if load_finetuned:
+            self.load_bi_encoder_model(True)
         if self.loss_type == 'softmax':
             self.softmax_loss = self.loss(model=self.bi_encoder_model,
                                           sentence_embedding_dimension=768,
