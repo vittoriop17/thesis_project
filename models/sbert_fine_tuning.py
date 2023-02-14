@@ -90,10 +90,6 @@ class SbertFineTuning:
         self.bi_encoder_path = os.path.join(dataset_name, f"scenario_{scenario}",
                                             "bi_encoder" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) \
             if evaluation_only == False else bi_encoder_path
-        os.makedirs(self.bi_encoder_path, exist_ok=True)
-        fh = logging.FileHandler(os.path.join(self.bi_encoder_path, "fine_tuning.log"))
-        fh.setLevel(logging.DEBUG)
-        logging.getLogger("fine_tuner").addHandler(fh)
         self.save_arguments()
         self.silver_data = []
         self.silver_scores = []
