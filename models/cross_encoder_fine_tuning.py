@@ -27,6 +27,7 @@ class CrossEncoderFineTuner:
         :param task: str. {"regression", "classification"}
         :param num_samples: int. Number of training samples to use for fine-tuning
         """
+        os.chdir("models") if os.getcwd().endswith('ProjectCode') or os.getcwd().endswith('thesis_project') else None
         self.cross_encoder_path = os.path.join(dataset_name, dataset_name + "_crossencoder_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 
         self.silver_data, self.all_silver_data = None, None
