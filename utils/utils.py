@@ -114,7 +114,7 @@ def upload_args(file_path=None):
     parser = argparse.ArgumentParser(description=f'Sentence-BERT fine-tuning parameters')
     parser.add_argument("--name", required=False, type=str, help="Name of the experiment")
     # ----- SBERT FINE-TUNING PARAMETERS
-    parser.add_argument("--num_epochs", default=5, required=False, type=int,
+    parser.add_argument("--num_epochs", required=False, type=int,
                         help="Number of epochs")
     parser.add_argument("--scenario", required=False, type=int,
                         choices=[1, 2],
@@ -127,7 +127,7 @@ def upload_args(file_path=None):
                         choices=['binary', 'regression', 'multilabel_accuracy'],
                         help="Evaluator type used for the evaluation of the sentence-bert model. "
                              "Valid options: binary, regression, multilabel_accuracy")
-    parser.add_argument("--batch_size", default=16, required=False, type=int,
+    parser.add_argument("--batch_size", required=False, type=int,
                         help="Batch size used for sentence-bert fine-tuning.")
     parser.add_argument("--max_seq_length", default=128, required=False, type=int,
                         help="Max sequence length for sentence-bert input sentences. LOnger sentences will be truncated")
