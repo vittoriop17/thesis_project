@@ -92,7 +92,7 @@ class CrossEncoderFineTuner:
     def fine_tune(self):
         train_samples = []
         scores = self.silver_scores if self.task == 'regression' else self.binary_silver_scores
-        train_samples.append(InputExample(texts=[row[0], row[1]], label=score) for row, score in
+        train_samples.extend(InputExample(texts=[row[0], row[1]], label=score) for row, score in
                               zip(self.silver_data, scores))
         train_dataloader = DataLoader(train_samples, shuffle=True, batch_size=self.batch_size)
         self.prepare_evaluator()

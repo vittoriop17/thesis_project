@@ -50,9 +50,9 @@ max_seq_length = 128
 use_cuda = torch.cuda.is_available()
 
 ###### Read Datasets ######
-sts_dataset_path = 'datasets/stsbenchmark.tsv.gz'
+sts_dataset_path = '..\\data\\STS\\silver_set_regression_cosine.tsv'
 qqp_dataset_path = 'quora-IR-dataset'
-ssp_dataset_path = '..\\data\\review-sentence-pairs'
+ssp_dataset_path = '..\\data\\STS\\silver_set_regression_cosine.tsv'
 
 # Check if the STSb dataset exsist. If not, download and extract it
 if not os.path.exists(sts_dataset_path):
@@ -107,19 +107,16 @@ gold_samples = []
 dev_samples = []
 test_samples = []
 
-with gzip.open(sts_dataset_path, 'rt', encoding='utf8') as fIn:
+with open(sts_dataset_path, 'rt', encoding='utf8') as fIn:
     reader = csv.DictReader(fIn, delimiter='\t', quoting=csv.QUOTE_NONE)
     for row in reader:
         score = float(row['score']) / 5.0  # Normalize score to range 0 ... 1
 
-        if row['split'] == 'dev':
-            dev_samples.append(InputExample(texts=[row['sentence1'], row['sentence2']], label=score))
-        elif row['split'] == 'test':
-            test_samples.append(InputExample(texts=[row['sentence1'], row['sentence2']], label=score))
-        else:
-            #As we want to get symmetric scores, i.e. CrossEncoder(A,B) = CrossEncoder(B,A), we pass both combinations to the train set
-            gold_samples.append(InputExample(texts=[row['sentence1'], row['sentence2']], label=score))
-            gold_samples.append(InputExample(texts=[row['sentence2'], row['sentence1']], label=score))
+        dev_samples.append(InputExample(texts=[row['sentence_1'], row['sentence_2']], label=score))
+        test_samples.append(InputExample(texts=[row['sentence_1'], row['sentence_2']], label=score))
+        #As we want to get symmetric scores, i.e. CrossEncoder(A,B) = CrossEncoder(B,A), we pass both combinations to the train set
+        gold_samples.append(InputExample(texts=[row['sentence_1'], row['sentence_2']], label=score))
+        gold_samples.append(InputExample(texts=[row['sentence_2'], row['sentence_1']], label=score))
 
 
 # We wrap gold_samples (which is a List[InputExample]) into a pytorch DataLoader
