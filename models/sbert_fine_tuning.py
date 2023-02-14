@@ -60,6 +60,7 @@ class SbertFineTuning:
             'multilabel_accuracy': LabelAccuracyEvaluator
         }
         os.chdir("models") if os.getcwd().endswith('ProjectCode') else None
+        silver_set_path = silver_set_path if scenario == 2 else str.replace(silver_set_path, ".tsv", "__CE.tsv")
         logging.info("Start checking argument...")
         self.sanity_check(dataset_name, scenario, bi_encoder_path, evaluation_only, silver_set_path, task, loss_type,
                           evaluator_type, strategy)
@@ -185,20 +186,15 @@ class SbertFineTuning:
         self.bi_encoder_model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
 
     def read_silver_set(self):
-        logging.info("Loading Silver Set (for scenario {})".format(self.scenario))
-        if self.scenario == 2:
-            with open(self.silver_set_path, encoding='utf8') as fin:
-                reader = csv.DictReader(fin, delimiter='\t', quoting=csv.QUOTE_NONE)
-                for row in reader:
-                    self.silver_data.append([row['sentence_1'], row['sentence_2']])
-                    score = float(row['score'])
-                    assert 0 <= score <= 1, f"Found invalid score: {score}"
-                    self.silver_scores.append(score)
-                    self.binary_silver_scores.append(1 if score >= 0.5 else 0)
-        else:
-            # TODO - implement dataset preparation for scenario 1
-            print("Read silver set for scenario 1 not implemented!")
-            exit(-10)
+        logging.info("Loading Silver Set (for scenario {}). Dataset path: {}".format(self.scenario, self.silver_set_path))
+        with open(self.silver_set_path, encoding='utf8') as fin:
+            reader = csv.DictReader(fin, delimiter='\t', quoting=csv.QUOTE_NONE)
+            for row in reader:
+                self.silver_data.append([row['sentence_1'], row['sentence_2']])
+                score = float(row['score'])
+                assert 0 <= score <= 1, f"Found invalid score: {score}"
+                self.silver_scores.append(score)
+                self.binary_silver_scores.append(1 if score >= 0.5 else 0)
         # if task == regression, then the scores are already stored inside self.silver_scores
         # if task == classification, then the scores are discretized. Stored inside self.silver_scores, again
         if self.dataset_name == 'STS' and self.task == 'classification':
