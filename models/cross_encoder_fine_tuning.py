@@ -15,7 +15,7 @@ import numpy as np
 
 class CrossEncoderFineTuner:
     def __init__(self, silver_set_path, dev_set_path, dataset_name, task,
-                 base_model='bert-base-uncased', batch_size: int = 16, num_epochs: int = 1, max_seq_length: int = 128,
+                 base_model='bert-base-uncased', batch_size: int = 16, num_epochs: int = 10, max_seq_length: int = 128,
                  num_samples=1000):
         """
 
@@ -72,8 +72,6 @@ class CrossEncoderFineTuner:
 
     def prepare_evaluator(self):
         logging.info(f"Preparing evaluator")
-        s_pairs = []
-        labels = []
         dev_samples = []
         eval_data_path = self.dev_set_path
         with open(eval_data_path, encoding='utf8') as fin:
@@ -135,4 +133,7 @@ if __name__ == '__main__':
 
     fine_tuner = CrossEncoderFineTuner(silver_set_path=silver_set_path, dev_set_path=dev_set_path,
                                        dataset_name="STS", task='regression')
+    # fine_tuner = CrossEncoderFineTuner(silver_set_path=silver_set_path, dev_set_path=dev_set_path,
+    #                                    dataset_name="MRPC", task='classification')
     fine_tuner.fine_tune()
+    fine_tuner.label_set()

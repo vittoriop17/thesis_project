@@ -169,8 +169,12 @@ class SbertFineTuning:
         filepath = os.path.join(self.bi_encoder_path, "args.json")
         save_args_to_json(dictionary, filepath)
 
-    def load_bi_encoder_model(self):
+    def load_bi_encoder_model(self, from_file=False):
         logging.info("Loading bi-encoder model: {}".format(self.base_model))
+        if from_file and self.bi_encoder_path is not None:
+            logging.info(f"Loading pre-trained bi-encoder from path {self.bi_encoder_path}")
+            self.bi_encoder_model = SentenceTransformer(self.bi_encoder_path)
+            return
         # Use Huggingface/transformers model (like BERT, RoBERTa, XLNet, XLM-R) for mapping tokens to embeddings
         word_embedding_model = models.Transformer(self.base_model, max_seq_length=self.max_seq_length)
         # Apply mean pooling to get one fixed sized sentence vector
@@ -308,8 +312,9 @@ class SbertFineTuning:
             train_loss = self.loss(model=self.bi_encoder_model)
         return (train_dataloader, train_loss)
 
-    def evaluate_sbert(self):
+    def evaluate_sbert(self, load_finetuned=False):
         logging.info("Starting evaluation on test data...\n")
+        self.load_bi_encoder_model(from_file=load_finetuned)
         if self.loss_type == 'softmax':
             self.softmax_loss = self.loss(model=self.bi_encoder_model,
                                           sentence_embedding_dimension=768,
