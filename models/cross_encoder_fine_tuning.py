@@ -110,10 +110,10 @@ class CrossEncoderFineTuner:
         assert all(0.0 <= score <= 1.0 for score in all_silver_scores)
         all_binary_silver_scores = [1 if score >= 0.5 else 0 for score in all_silver_scores]
         if self.task == 'classification':
-            sentences_and_score = [(row['sentence_1'], row['sentence_2'], score)
+            sentences_and_score = [(row[0], row[1], score)
                                    for row, score in zip(self.all_silver_data, all_binary_silver_scores)]
         elif self.task == 'regression':
-            sentences_and_score = [(row['sentence_1'], row['sentence_2'], score)
+            sentences_and_score = [(row[0], row[1], score)
                                    for row, score in zip(self.all_silver_data, all_silver_scores)]
         filename = str.replace(self.silver_set_path, ".tsv", "__CE.tsv")
         with open(filename, 'w', encoding='utf') as fout:
