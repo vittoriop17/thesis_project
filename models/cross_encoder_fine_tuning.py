@@ -11,12 +11,13 @@ import sys
 import os
 import math
 import numpy as np
+import argparse
 
 
 class CrossEncoderFineTuner:
     def __init__(self, silver_set_path, dev_set_path, dataset_name, task,
                  base_model='bert-base-uncased', batch_size: int = 16, num_epochs: int = 10, max_seq_length: int = 128,
-                 num_samples=1000):
+                 num_samples=1000, only_labeling=False, cross_encoder_path=None):
         """
 
         :param silver_set_path:
@@ -28,7 +29,9 @@ class CrossEncoderFineTuner:
         :param num_samples: int. Number of training samples to use for fine-tuning
         """
         os.chdir("models") if os.getcwd().endswith('ProjectCode') or os.getcwd().endswith('thesis_project') else None
-        self.cross_encoder_path = os.path.join(dataset_name, dataset_name + "_crossencoder_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        assert cross_encoder_path is not None if only_labeling else True, f"Must provide the path to an existing cross encoder model when 'only_labeling' is set to True"
+        self.cross_encoder_path = os.path.join(dataset_name, dataset_name + "_crossencoder_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) \
+            if not only_labeling and cross_encoder_path is not None else cross_encoder_path
 
         self.silver_data, self.all_silver_data = None, None
         self.binary_silver_scores = None
@@ -43,8 +46,9 @@ class CrossEncoderFineTuner:
         self.num_samples = num_samples
         self.batch_size = batch_size
         self.max_seq_length = max_seq_length
+        self.only_labeling = only_labeling
         self.read_data()
-        self.load_model()
+        self.load_model(from_file=True if only_labeling else False)
 
     def load_model(self, from_file=False):
         self.cross_encoder_model = CrossEncoder(self.model_base, num_labels=1) if not from_file \
@@ -124,16 +128,23 @@ class CrossEncoderFineTuner:
 
 
 if __name__ == '__main__':
-    silver_set_path = "../data/STS/silver_set_regression_cosine.tsv"
-    dev_set_path = "../data/STS/dev_set.tsv"
-    test_set_path = "../data/STS/test_set.tsv"
-    # silver_set_path = "../data/MRPC/silver_set_classification0.5_cosine.tsv"
-    # dev_set_path = "../data/MRPC/dev_set.tsv"
-    # test_set_path = "../data/MRPC/test_set.tsv"
-
+    parser = argparse.ArgumentParser(description=f'Cross-Encoder fine-tuning')
+    parser.add_argument("--dataset_name", required=True, type=str, help="Name of the dataset",
+                        choices=["disney", "mrpc", "sts"])
+    args = parser.parse_args()
+    if args.dataset_name == "disney":
+        raise NotImplementedError("CrossEncoder fine-tuning not implemented for DISNEY dataset")
+    elif args.dataset_name == "mrpc":
+        silver_set_path = "../data/MRPC/silver_set_classification0.5_cosine.tsv"
+        dev_set_path = "../data/MRPC/dev_set.tsv"
+        test_set_path = "../data/MRPC/test_set.tsv"
+        task = "classification"
+    elif args.dataset_name == "sts":
+        silver_set_path = "../data/STS/silver_set_regression_cosine.tsv"
+        dev_set_path = "../data/STS/dev_set.tsv"
+        test_set_path = "../data/STS/test_set.tsv"
+        task = "regression"
     fine_tuner = CrossEncoderFineTuner(silver_set_path=silver_set_path, dev_set_path=dev_set_path,
-                                       dataset_name="STS", task='regression')
-    # fine_tuner = CrossEncoderFineTuner(silver_set_path=silver_set_path, dev_set_path=dev_set_path,
-    #                                    dataset_name="MRPC", task='classification')
+                                       dataset_name=str.upper(args.dataset_name), task=task)
     fine_tuner.fine_tune()
     fine_tuner.label_set()

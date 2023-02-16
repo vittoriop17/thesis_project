@@ -3,7 +3,7 @@
   "dev_set_path": "data/STS/dev_set.tsv",
   "test_set_path": "data/STS/test_set.tsv",
   "dataset_name": "STS",
-  "scenario": 1,
+  "scenario": 2,
   "loss_type": "cosine",
   "evaluator_type": "regression",
   "batch_size": 16,
