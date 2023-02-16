@@ -31,7 +31,7 @@ class CrossEncoderFineTuner:
         os.chdir("models") if os.getcwd().endswith('ProjectCode') or os.getcwd().endswith('thesis_project') else None
         assert cross_encoder_path is not None if only_labeling else True, f"Must provide the path to an existing cross encoder model when 'only_labeling' is set to True"
         self.cross_encoder_path = os.path.join(dataset_name, dataset_name + "_crossencoder_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) \
-            if not only_labeling and cross_encoder_path is not None else cross_encoder_path
+            if not only_labeling else cross_encoder_path
 
         self.silver_data, self.all_silver_data = None, None
         self.binary_silver_scores = None
