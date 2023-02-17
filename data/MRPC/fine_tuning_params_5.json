@@ -1,5 +1,5 @@
 {
-  "silver_set_path": "data/MRPC/train_set.5_cosine.tsv",
+  "silver_set_path": "data/MRPC/train_set.tsv",
   "dev_set_path": "data/MRPC/dev_set__scenario_0.tsv",
   "test_set_path": "data/MRPC/test_set.tsv",
   "dataset_name": "MRPC",
