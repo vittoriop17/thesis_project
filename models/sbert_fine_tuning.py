@@ -63,7 +63,7 @@ class SbertFineTuning:
             'multilabel_accuracy': LabelAccuracyEvaluator
         }
         os.chdir("models") if os.getcwd().endswith('ProjectCode') else None
-        silver_set_path = silver_set_path if scenario == 2 else str.replace(silver_set_path, ".tsv", "__CE.tsv")
+        silver_set_path = str.replace(silver_set_path, ".tsv", "__CE.tsv") if scenario == 1 else silver_set_path
         logging.info("Start checking argument...")
         self.sanity_check(dataset_name, scenario, bi_encoder_path, evaluation_only, silver_set_path, task, loss_type,
                           evaluator_type, strategy)
