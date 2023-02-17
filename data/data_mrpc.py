@@ -58,6 +58,17 @@ def get_validation_set(df_train=None, size=0.25, save=False):
     return df_validation
 
 
+def train_validation_split(df=None, size=0.25, save=False):
+    df = get_original_train_or_test_sentence_pairs(True) if df is None else df
+    validation_set_len = int(len(df) * size)
+    validation_set_idxs = np.random.choice(len(df), size=validation_set_len, replace=False)
+    df_validation = df.iloc[validation_set_idxs]
+    df_train = df.iloc[~validation_set_idxs]
+    if save : df_validation[['score', 'sentence_1', 'sentence_2']].to_csv("MRPC/dev_set__scenario_0.tsv", sep="\t", header=True, index=False)
+    if save : df_train[['score', 'sentence_1', 'sentence_2']].to_csv("MRPC/train_set.tsv", sep="\t", header=True, index=False)
+    return df_validation
+
+
 def reformat_test_set():
     df_test = get_original_train_or_test_sentence_pairs(train=False)
     df_test = df_test[['score', 'sentence_1', 'sentence_2']]
@@ -65,12 +76,15 @@ def reformat_test_set():
 
 
 if __name__=='__main__':
-    df__sid_sentence = get_all_sentences()
-    test_sentence_ids = get_train_or_test_sentence_ids(False)
-    df__without_test_sentences = remove_test_sentences(df__sid_sentence, test_sentence_ids)
-    df_validation = get_validation_set(save=True)
-    reformat_test_set()
-    val_sentence_ids = get_train_or_test_sentence_ids(False, df_validation)
-    df__without_val_and_test_sentences = remove_test_sentences(df__without_test_sentences, val_sentence_ids)
-    SilverSetConstructor(list(df__without_val_and_test_sentences.sentence), name='MRPC dataset',
-                         verbose=False, folder="MRPC", task='classification')
+    np.random.seed(42)
+    # df__sid_sentence = get_all_sentences()
+    # test_sentence_ids = get_train_or_test_sentence_ids(False)
+    # df__without_test_sentences = remove_test_sentences(df__sid_sentence, test_sentence_ids)
+    # df_validation = get_validation_set(save=True)
+    # reformat_test_set()
+    # val_sentence_ids = get_train_or_test_sentence_ids(False, df_validation)
+    # df__without_val_and_test_sentences = remove_test_sentences(df__without_test_sentences, val_sentence_ids)
+    # SilverSetConstructor(list(df__without_val_and_test_sentences.sentence), name='MRPC dataset',
+    #                      verbose=False, folder="MRPC", task='classification')
+    df = get_original_train_or_test_sentence_pairs(True)
+    train_validation_split(df, 0.1, True)

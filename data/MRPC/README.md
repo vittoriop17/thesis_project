@@ -11,6 +11,13 @@ The training dataset won't be directly used for training the model.
 Instead, it will be only used to extract validation data (25% of the training set).
 The training dataset will be constructed automatically using the **SILVER SET CONSTRUCTION TECHNIQUE**.
 
+The files
+- train_set.tsv
+- dev_set__scenario_0.tsv
+
+are both extracted from msr_paraphrase_train.txt using a 90-10 split. Both datasets contain ground truth labels.
+In this way, it is possible to fine-tune the models with real labels and compare it with the automatic training set construction technique
+
 # Silver Set Construction
 The Silver Set is built using the _extract_sentence_pairs_ and _label_sentence_pairs_ functions 
 (check module silver_set_construction.py)
