@@ -39,7 +39,10 @@ class SbertFineTuning:
         :param dev_set_path:
         :param test_set_path:
         :param dataset_name:
-        :param scenario: int. {1, 2}
+        :param scenario: int. {0, 1, 2}.
+            0: use original training data
+            1: use silver set with labels inferred through CrossEncoder model
+            2: use silver set with labels inferred through SIF model
         :param evaluation_only:
         :param bi_encoder_path:
         :param base_model: str. Default 'bert-base-uncased'.
@@ -104,7 +107,7 @@ class SbertFineTuning:
                      evaluation_only, silver_set_path, task, loss_type, evaluator_type, strategy):
         assert str.upper(dataset_name) in ['MRPC', 'STS', 'DISNEY'], \
             f"Invalid value for argument 'dataset_name'!, Expected one of these: MRPC, STS, DISNEY. Found {dataset_name}"
-        assert scenario in [1, 2], f"Invalid value for argument 'scenario'. Expected 1 or 2. Found: {scenario}"
+        assert scenario in [1, 2, 0], f"Invalid value for argument 'scenario'. Expected 0, 1 or 2. Found: {scenario}"
         assert bi_encoder_path is not None if evaluation_only else True, \
             "Argument 'bi_encoder_path' required if 'evaluation_only==True'!"
         assert os.path.exists(bi_encoder_path) if evaluation_only else True, \
@@ -158,6 +161,7 @@ class SbertFineTuning:
             "num_epochs": self.num_epochs,
             "batch_size": self.batch_size,
             "dataset_name": self.dataset_name,
+            "training_dataset": self.silver_set_path,
             "task": self.task,
             "strategy": self.strategy,
             "base_model": self.base_model,

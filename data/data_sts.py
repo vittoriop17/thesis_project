@@ -8,8 +8,8 @@ from silver_set_construction import *
 from sklearn.preprocessing import KBinsDiscretizer
 
 
-def get_test_data(validation=False):
-    filepath = "STS\\sts-test.csv" if not validation else "STS\\sts-dev.csv"
+def get_data(train_dev_test="train"):
+    filepath = f"STS\\sts-{train_dev_test}.csv"
     df = pd.read_csv(filepath, sep=",\t", names=["genre", "dataset", "year", "sid", "score", "sentence_1", "sentence_2", "useless1", "useless2"])
     df = df[["score", "sentence_1", "sentence_2"]]
     return df
@@ -22,9 +22,9 @@ def get_training_sentences():
     return train_sentences
 
 
-def prepare_evaluation_data(dev=True):
-    filepath = "STS\\sts-dev.csv" if dev else "STS\\sts-test.csv"
-    out_filepath = "STS\\dev_set.tsv" if dev else "STS\\test_set.tsv"
+def prepare_data(train_dev_test="train"):
+    filepath = f"STS\\sts-{train_dev_test}.csv"
+    out_filepath = f"STS\\{train_dev_test}_set.tsv"
     df = pd.read_csv(filepath, engine='python', sep=",\t", names=["genre", "dataset", "year", "sid", "score", "sentence_1", "sentence_2", "useless1", "useless2"])
     df = df[["score", "sentence_1", "sentence_2"]]
     df.score = df.score / 5
@@ -48,7 +48,6 @@ if __name__=='__main__':
     # train_sentences = get_training_sentences()
     # SilverSetConstructor(list(train_sentences), name='STS dataset',
     #                      verbose=False, folder="STS", task='regression')
-    test_set = get_test_data(False)
-    discretize_scores(test_set)
+    prepare_data("train")
     # prepare_evaluation_data(False)
     # prepare_evaluation_data(True)
