@@ -227,10 +227,10 @@ class SbertFineTuning:
             for row in reader:
                 sentences1.append(row['sentence_1'])
                 sentences2.append(row['sentence_2'])
-                if self.dataset_name == 'STS':
-                    labels.append(float(row['score']))
-                else:
+                if self.dataset_name == 'MRPC':
                     labels.append(int(float(row['score'])))  # Note: binary label
+                else:
+                    labels.append(float(row['score']))
         if self.dataset_name == 'STS' and self.task == 'classification':
             labels = self.kbins_discretizer.transform(np.reshape(labels, (-1, 1))).reshape(-1)
             if self.evaluator_type == 'multilabel_accuracy':
@@ -255,10 +255,10 @@ class SbertFineTuning:
             for row in reader:
                 sentences1.append(row['sentence_1'])
                 sentences2.append(row['sentence_2'])
-                if self.dataset_name == 'STS':
-                    labels.append(float(row['score']))
-                else:
+                if self.dataset_name == 'MRPC':
                     labels.append(int(float(row['score'])))  # Note: binary label
+                else:
+                    labels.append(float(row['score']))
         if self.dataset_name == 'STS' and self.task == 'classification':
             labels = self.kbins_discretizer.transform(np.reshape(labels, (-1, 1))).reshape(-1)
             if self.evaluator_type == 'multilabel_accuracy':
