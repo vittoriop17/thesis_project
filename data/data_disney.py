@@ -239,9 +239,9 @@ if __name__=='__main__':
     SilverSetConstructor(train_sents, name='Disney dataset',
                          verbose=False, folder="DISNEY", task='regression')
     SilverSetConstructor(dev_sents, name='Disney dev dataset',
-                         verbose=False, folder="DISNEY", task='regression', filepath="dev_set.tsv")
+                         verbose=False, folder="DISNEY", task='regression', filepath="dev_set.tsv", n_pairs=1500)
     SilverSetConstructor(test_sents, name='Disney set dataset',
-                         verbose=False, folder="DISNEY", task='regression', filepath="test_set.tsv")
+                         verbose=False, folder="DISNEY", task='regression', filepath="test_set.tsv", n_pairs=1500)
     # save sentences (n.b.: no sentence pairs!!)
     filepath = "DISNEY\\{}_sentences.txt"
     save_sentences(df_train.spacy_sentences, filepath.format("train"))

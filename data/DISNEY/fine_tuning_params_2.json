@@ -1,7 +1,7 @@
 {
   "silver_set_path": "data/DISNEY/silver_set_regression_cosine.tsv",
-  "dev_set_path": "data/DISNEY/dev_set.tsv",
-  "test_set_path": "data/DISNEY/test_set.tsv",
+  "dev_set_path": "data/STS/dev_set.tsv",
+  "test_set_path": "data/STS/test_set.tsv",
   "dataset_name": "DISNEY",
   "scenario": 2,
   "loss_type": "cosine",

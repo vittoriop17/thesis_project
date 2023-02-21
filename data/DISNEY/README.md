@@ -8,3 +8,5 @@ Set of steps:
 N.B.: dev_set.tsv and test_set.tsv are built using the SilverSetConstruction technique, since there are
 no labeled data for this dataset. The assessment of the fine-tuning is made through fake labels...
 
+# Alternative to dev and test sets
+Use STS dev and test splits. In this way, we can rely on true labels. 

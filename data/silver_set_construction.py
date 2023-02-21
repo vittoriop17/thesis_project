@@ -24,7 +24,7 @@ SIF_CONTROLLED_PAIRS_PER_SENTENCE = 2
 
 class SilverSetConstructor:
     def __init__(self, sentences, name, folder, verbose=True, thr=0.5, task='regression', similarity_function='cosine',
-                 seed=42, filepath=None):
+                 seed=42, filepath=None, n_pairs=None):
         np.random.seed(seed)
         assert task in ['regression', 'classification'],\
             f"Invalid value for 'task' argument. Expected 'regression' or 'classification'. Found {task} instead"
@@ -33,6 +33,7 @@ class SilverSetConstructor:
         assert 0<thr<1, f"Invalid value for 'thr' (threshold). Expected value between 0 and 1 (excluded). Found {thr}"
         # Remove punctuation from sentences_wo_punct!
         # N.B. this is need only before applying SIF. No need to remove punct for bert
+        self.n_pairs = n_pairs
         self.sentences_wo_punct = [s.translate(str.maketrans('', '', string.punctuation)) for s in sentences]
         self.sentences_w_punct = sentences
         self.verbose = verbose
@@ -70,6 +71,9 @@ class SilverSetConstructor:
             if self.verbose:
                 print(f"S1: {s1}\tS2: {most_similar[0][0]}, \tScore: {most_similar[0][2]}")
             self.pairs.extend([(s1, s2[0]) for s2 in most_similar])
+        if self.n_pairs:
+            # self.pairs = np.random.choice(self.pairs, self.n_pairs, replace=False)
+            self.pairs = np.array(self.pairs)[np.random.choice(len(self.pairs), self.n_pairs, replace=False)]
 
     def label_sentence_pairs(self):
         self.labeled_pairs.extend([(pair, self.score(pair)) for pair in self.pairs])
