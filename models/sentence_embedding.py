@@ -1,7 +1,7 @@
 from fse import Vectors, uSIF, SplitIndexedList, Average
 from sentence_transformers import SentenceTransformer
 import pickle
-from data.data_loader import *
+from data.data_disney import *
 from models.pipeline import Pipeline
 
 pretrained_bi_encoder_path = "D:\\UNIVERSITA\\KTH\\THESIS\\ProjectCode\\models\\ssp_cross_domain"

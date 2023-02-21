@@ -23,7 +23,8 @@ SIF_CONTROLLED_PAIRS_PER_SENTENCE = 2
 
 
 class SilverSetConstructor:
-    def __init__(self, sentences, name, folder, verbose=True, thr=0.5, task='regression', similarity_function='cosine', seed=42):
+    def __init__(self, sentences, name, folder, verbose=True, thr=0.5, task='regression', similarity_function='cosine',
+                 seed=42, filepath=None):
         np.random.seed(seed)
         assert task in ['regression', 'classification'],\
             f"Invalid value for 'task' argument. Expected 'regression' or 'classification'. Found {task} instead"
@@ -49,7 +50,7 @@ class SilverSetConstructor:
         self.label_sentence_pairs()
         print(f"End Silver Set Construction."
               f"Execution time: {time.time() - start_time} sec")
-        filepath = os.path.join(folder, f"silver_set_{task}_{similarity_function}.tsv") if task == 'regression' else \
+        filepath = os.path.join(folder, filepath) if filepath is not None else os.path.join(folder, f"silver_set_{task}_{similarity_function}.tsv") if task == 'regression' else \
             os.path.join(folder, f"silver_set_{task}{thr}_{similarity_function}.tsv")
         np.random.shuffle(self.labeled_pairs)
         self.save_sentence_pairs(filepath)

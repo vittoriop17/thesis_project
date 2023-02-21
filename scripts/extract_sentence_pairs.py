@@ -1,5 +1,5 @@
 from models.sentence_embedding import *
-from data.data_loader import *
+from data.data_disney import *
 import csv
 from utils.utils import *
 from sentence_transformers.cross_encoder import CrossEncoder

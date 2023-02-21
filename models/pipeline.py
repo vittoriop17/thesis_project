@@ -1,4 +1,4 @@
-from data.data_loader import extract_sentences_spacy, SPACY_DOCS_PATH, replace_special_entities_and_lemmatize, \
+from data.data_disney import extract_sentences_spacy, SPACY_DOCS_PATH, \
     extract_words, MIN_SENT_LEN, MAX_SEN_LEN
 from models import sentence_embedding as se
 

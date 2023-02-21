@@ -132,13 +132,16 @@ if __name__ == '__main__':
     parser.add_argument("--dataset_name", required=True, type=str, help="Name of the dataset",
                         choices=["disney", "mrpc", "sts"])
     args = parser.parse_args()
-    if args.dataset_name == "disney":
-        raise NotImplementedError("CrossEncoder fine-tuning not implemented for DISNEY dataset")
-    elif args.dataset_name == "mrpc":
+    if args.dataset_name == "mrpc":
         silver_set_path = "../data/MRPC/silver_set_classification0.5_cosine.tsv"
         dev_set_path = "../data/MRPC/dev_set.tsv"
         test_set_path = "../data/MRPC/test_set.tsv"
         task = "classification"
+    elif args.dataset_name == "disney":
+        silver_set_path = "../data/DISNEY/silver_set_regression_cosine.tsv"
+        dev_set_path = "../data/DISNEY/dev_set.tsv"
+        test_set_path = "../data/DISNEY/test_set.tsv"
+        task = "regression"
     elif args.dataset_name == "sts":
         silver_set_path = "../data/STS/silver_set_regression_cosine.tsv"
         dev_set_path = "../data/STS/dev_set.tsv"

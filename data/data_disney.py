@@ -12,50 +12,16 @@ import os
 import inspect
 from langdetect import detect
 from bertopic import BERTopic
+from silver_set_construction import *
+from sklearn.model_selection import train_test_split
 
-# SpaCy recognizes the following built-in entity types:
-# PERSON - People, including fictional.
-#
-# NORP - Nationalities or religious or political groups.
-#
-# FAC - Buildings, airports, highways, bridges, etc.
-#
-# ORG - Companies, agencies, institutions, etc.
-#
-# GPE - Countries, cities, states.
-#
-# LOC - Non-GPE locations, mountain ranges, bodies of water.
-#
-# PRODUCT - Objects, vehicles, foods, etc. (Not services.)
-#
-# EVENT - Named hurricanes, battles, wars, sports events, etc.
-#
-# WORK_OF_ART - Titles of books, songs, etc.
-#
-# LAW - Named documents made into laws.
-#
-# LANGUAGE - Any named language.
-#
-# DATE - Absolute or relative dates or periods.
-#
-# TIME - Times smaller than a day.
-#
-# PERCENT - Percentage, including "%".
-#
-# MONEY - Monetary values, including unit.
-#
-# QUANTITY - Measurements, as of weight or distance.
-#
-# ORDINAL - "first", "second", etc.
-#
-# CARDINAL - Numerals that do not fall under another type.
 
 SPECIAL_SPACY_ENTITIES = ['ORDINAL', 'CARDINAL', 'MONEY', 'PERCENT', 'QUANTITY', 'TIME', 'DATE']
 SPACY_DOCS_PATH = "..\\data\\{}_docs.spacy"
 PATH_DATA = "DISNEY/en_reviews_disney.csv"
 MIN_SENT_LEN = 3
 MAX_SEN_LEN = 128
-
+MAX_SENTENCES = 25_000
 
 def extract_sentences_spacy(df, path_spacy_data=None, nlp=None):
     """
@@ -117,36 +83,36 @@ def extract_bert_topics(df, nlp, topic_model=None):
     return topic_model
 
 
-def replace_special_entities_and_lemmatize(df, lemmatize=True):
-    """
-    Given a dataframe, replace all the special spacy entities (see SPECIAL_SPACY_ENTITIES) with the
-    name of the entity itself. E.g.: It was worth the $30 I paid -> It was worth the money I paid
-    Plus, apply lemmatization. The two steps are integrated in one single function for convenience
-    :param df: pandas dataframe. Must contain the attribute 'doc'
-    """
-    assert hasattr(df, "doc"), "The dataframe does not contain the attribute 'doc'! Call function 'extract_sentences_spacy' first"
-    df['special_sentences'] = [replace_entities_in_sentence_and_lemmatize(sentence, lemmatize) for sentence in
-                               tqdm(df.spacy_sentences, inspect.stack()[0][3])]
+# def replace_special_entities_and_lemmatize(df, lemmatize=True):
+#     """
+#     Given a dataframe, replace all the special spacy entities (see SPECIAL_SPACY_ENTITIES) with the
+#     name of the entity itself. E.g.: It was worth the $30 I paid -> It was worth the money I paid
+#     Plus, apply lemmatization. The two steps are integrated in one single function for convenience
+#     :param df: pandas dataframe. Must contain the attribute 'doc'
+#     """
+#     assert hasattr(df, "doc"), "The dataframe does not contain the attribute 'doc'! Call function 'extract_sentences_spacy' first"
+#     df['special_sentences'] = [replace_entities_in_sentence_and_lemmatize(sentence, lemmatize) for sentence in
+#                                tqdm(df.spacy_sentences, inspect.stack()[0][3])]
 
 
-def replace_entities_in_sentence_and_lemmatize(sentence, lemmatize=True):
-    """
-    Replace special entities, lemmatize if required and remove punct
-    :param sentence: Spacy Span. Spacy sentence
-    :param lemmatize: bool.
-    :return: str. The preprocessed sentence
-    """
-    new_sentence = []
-    for token in sentence:
-        try:
-            if token.ent_type_ in SPECIAL_SPACY_ENTITIES:
-                new_sentence.append(token.ent_type_.lower())
-            elif not token.is_punct:  # remove punct
-                new_sentence.extend([token.lemma_.lower() if lemmatize else token.lower_])
-        except:
-            print(f"Exception occurent in {inspect.stack()[0][3]} for token {token}")
-            new_sentence.append(token.lower_)
-    return " ".join([t for t in new_sentence])
+# def replace_entities_in_sentence_and_lemmatize(sentence, lemmatize=True):
+#     """
+#     Replace special entities, lemmatize if required and remove punct
+#     :param sentence: Spacy Span. Spacy sentence
+#     :param lemmatize: bool.
+#     :return: str. The preprocessed sentence
+#     """
+#     new_sentence = []
+#     for token in sentence:
+#         try:
+#             if token.ent_type_ in SPECIAL_SPACY_ENTITIES:
+#                 new_sentence.append(token.ent_type_.lower())
+#             elif not token.is_punct:  # remove punct
+#                 new_sentence.extend([token.lemma_.lower() if lemmatize else token.lower_])
+#         except:
+#             print(f"Exception occurent in {inspect.stack()[0][3]} for token {token}")
+#             new_sentence.append(token.lower_)
+#     return " ".join([t for t in new_sentence])
 
 
 def extract_sentences_nltk(df):
@@ -184,13 +150,12 @@ def filter_non_english_reviews(df, save_to_path=None):
         df.to_csv(save_to_path)
 
 
-def get_dataframes(df_filepath, train_val_test=(0.7, 0.2, 0.1)):
+def get_dataframes(df_filepath, train_val_test=(0.7, 0.2, 0.1), n_total_sentences=None):
     """
     Load the dataframe from a csv file, then:
     1. clean the reviewText attribute (replace the special characters &...;, remove html tags, ...)
-    2. TODO - substitute numbers and emails with a special token like <number> and <email>
     2. sort the reviews based on the attribute unixReviewTime and add the attribute date to the dataframe
-    4. split the dataset into train-val-test sets
+    3. split the dataset into train-val-test sets
     :param df_filepath: str. Path to the .csv file where the dataset is stored.
         For compatibility, it should at least contain the columns: reviewText, unixReviewTime (for splitting the set)
     :return:
@@ -201,7 +166,7 @@ def get_dataframes(df_filepath, train_val_test=(0.7, 0.2, 0.1)):
     assert hasattr(df, "reviewText"),  f"Column 'reviewText' not found inside the dataframe. Set of columns: {df.columns}"
 
     # ------------------------- STEP 1 -----------------------------------
-    # replace special characters (&...;)
+    # replace special characters (&...;) and html text
     df.reviewText = [BeautifulSoup(unescape(r), 'lxml').text for r in df.reviewText]
 
     # ------------------------- STEP 2 -----------------------------------
@@ -210,7 +175,7 @@ def get_dataframes(df_filepath, train_val_test=(0.7, 0.2, 0.1)):
     df['date'] = [datetime.utcfromtimestamp(int(urt)).strftime('%Y-%m-%d %H:%M:%S') for urt in
                   df.unixReviewTime]
 
-    # -------------------------- STEP 4 -----------------------------------
+    # -------------------------- STEP 3 -----------------------------------
     # split data into training, validation and test sets
     train_samples = int(train_val_test[0] * df.shape[0])
     validation_samples = int(train_val_test[1] * df.shape[0])
@@ -225,13 +190,63 @@ def get_dataframes(df_filepath, train_val_test=(0.7, 0.2, 0.1)):
     return df_train, df_val, df_test
 
 
+def save_sentences(sentences, filepath):
+    with open(filepath, "w", encoding="utf-8") as fout:
+        [fout.write(f"{sentence}\n") for sentence in sentences]
+
+
 if __name__=='__main__':
     # df = get_dataframe_from_gzip("..\\data\\Software_5.json.gz")
     # sentences_wo_punct = get_sentences(df)
-    en_dataset_path = "/data/en_reviews_disney.csv"
-    path_spacy_data = "/data/train_docs.spacy"
-    df_train, df_eval, df_test = get_dataframes(en_dataset_path, (0.7, 0.2, 0.1))
-    nlp, df_train = extract_sentences_spacy(df_train, path_spacy_data)
+    en_dataset_path = "DISNEY\\en_reviews_disney.csv"
+    path_spacy_data = "DISNEY\\all_docs.spacy"
+    df, _, _ = get_dataframes(en_dataset_path, (1, 0, 0))
+    nlp, df = extract_sentences_spacy(df, path_spacy_data)
+
+    # remove duplicates
+    print(f"Number of sentences (before removing duplicates): {len(df)}")
+    df = df.drop_duplicates(subset='spacy_sentences')
+    print(f"Number of unique sentences: {len(df)}")
+
+    # FILTER SHORT AND LONG SENTENCES
+    extract_words(df)
+    n = df.shape[0]
+    df = df[df.len_sentence > MIN_SENT_LEN]
+    print(f"Number of sentences before filtering short sentences: {n}\tafter filtering: {df.shape[0]}")
+    n = df.shape[0]
+    df = df[df.len_sentence < MAX_SEN_LEN]
+    print(f"Number of sentences before filtering long sentences: {n}\tafter filtering: {df.shape[0]}")
+
+    # limit the number of sentences
+    if not len(df) < MAX_SENTENCES:
+        # keep the most recent sentences (df is sorted by date)
+        df = df.iloc[-MAX_SENTENCES:]
+
+    # split df into training-dev-test sets
+    df_train, df_test = train_test_split(df, test_size=0.2, random_state=42)
+    df_train, df_dev = train_test_split(df_train, test_size=0.25, random_state=42)  # 0.25 * 0.8 = 0.2
+    print(f"Number of training sentences: {len(df_train)}")
+    print(f"Number of dev sentences: {len(df_dev)}")
+    print(f"Number of test sentences: {len(df_test)}")
+
+    # Build training, dev, test sets with silver set construction object
+    # N.b: also dev and test have automatically extracted labels
+    # (used to check the quality of the fine-tuning... even though it would be better to have real labels)
+    train_sents, dev_sents, test_sents = list(map(lambda x: str(x), df_train.spacy_sentences)), \
+                                         list(map(lambda x: str(x), df_dev.spacy_sentences)), \
+                                         list(map(lambda x: str(x), df_test.spacy_sentences)),
+
+    SilverSetConstructor(train_sents, name='Disney dataset',
+                         verbose=False, folder="DISNEY", task='regression')
+    SilverSetConstructor(dev_sents, name='Disney dev dataset',
+                         verbose=False, folder="DISNEY", task='regression', filepath="dev_set.tsv")
+    SilverSetConstructor(test_sents, name='Disney set dataset',
+                         verbose=False, folder="DISNEY", task='regression', filepath="test_set.tsv")
+    # save sentences (n.b.: no sentence pairs!!)
+    filepath = "DISNEY\\{}_sentences.txt"
+    save_sentences(df_train.spacy_sentences, filepath.format("train"))
+    save_sentences(df_dev.spacy_sentences, filepath.format("dev"))
+    save_sentences(df_test.spacy_sentences, filepath.format("test"))
     # extract_bert_topics(df_train, nlp)
     # start_time = time.time()
     # sentences_wo_punct = extract_sentences_spacy(df_test)

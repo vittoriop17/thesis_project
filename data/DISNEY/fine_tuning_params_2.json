@@ -1,0 +1,16 @@
+{
+  "silver_set_path": "data/DISNEY/silver_set_regression_cosine.tsv",
+  "dev_set_path": "data/DISNEY/dev_set.tsv",
+  "test_set_path": "data/DISNEY/test_set.tsv",
+  "dataset_name": "DISNEY",
+  "scenario": 2,
+  "loss_type": "cosine",
+  "evaluator_type": "regression",
+  "batch_size": 16,
+  "num_epochs": 5,
+  "max_seq_length": 128,
+  "evaluation_only": "False",
+  "bi_encoder_path": "None",
+  "base_model": "bert-base-uncased",
+  "task": "regression"
+}

@@ -1,5 +1,5 @@
 from models.sentence_embedding import *
-from data.data_loader import *
+from data.data_disney import *
 import numpy as np
 import csv
 
