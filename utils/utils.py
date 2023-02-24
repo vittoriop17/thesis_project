@@ -166,6 +166,11 @@ def upload_args(file_path=None):
                              "It is an alternative to the command line arguments."
                              "Be careful, the command line arguments"
                              " have priority over the arguments indicated in the configuration file")
+    parser.add_argument("--no_fine_tuning", action="store_true", default=False,
+                        help="Boolean flag. If specified, s-bert fine-tuning is not applied")
+    # ------- Arguments for clustering (DISNEY DATASET ONLY)
+    parser.add_argument("--train_sentences_path", type=str,
+                        help="Path to the training sentences (used to train the clustering model)")
 
     args = parser.parse_args()
     file_path = getattr(args, 'config_file_path') if getattr(args, 'config_file_path') is not None else file_path

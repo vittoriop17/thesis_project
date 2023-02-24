@@ -4,3 +4,7 @@ checkpoints/
 *.csv
 *.gz
 *.spacy
+results/
+models/DISNEY
+models/MRPC
+models/STS
