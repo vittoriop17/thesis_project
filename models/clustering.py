@@ -97,6 +97,7 @@ class ClusteringPipeline:
             print(f"Starting evaluation with DBCV strategy")
             # TODO - add n_iter_search and param_dist (the keys of the dict) as class arguments
             n_iter_search = 20
+            self.hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True).fit(self.training_embeddings.astype('double'))
             random_search = RandomizedSearchCV(self.hdbscan_model,
                                                param_distributions=self.param_dist,
                                                n_iter=n_iter_search,
