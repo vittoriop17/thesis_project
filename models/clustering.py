@@ -78,7 +78,7 @@ class ClusteringPipeline:
         self.param_dist = {'min_samples': [10, 20, 50],
                            'min_cluster_size': [10, 20, 50, 100, 200],
                            'cluster_selection_method': ['eom', 'leaf'],
-                           'metric': ['cosine']
+                           'metric': ['euclidean']
                            }
         self.validity_scorer = make_scorer(hdbscan.validity.validity_index, greater_is_better=True)
 
