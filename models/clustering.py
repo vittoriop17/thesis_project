@@ -17,7 +17,8 @@ def validity_index_score(estimator, X):
         print(f"X.shape: {X.shape}, estimator: {estimator}")
     except:
         pass
-    y_pred = hdbscan.approximate_predict(estimator, X)
+    y_pred = estimator.fit_predict(X)
+
     try:
         print(f"y_pred: {y_pred}, n clusters: {np.unique(y_pred, return_counts=True)}")
     except:
