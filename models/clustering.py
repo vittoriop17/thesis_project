@@ -7,8 +7,22 @@ import umap
 from sentence_transformers import SentenceTransformer
 from typing import Literal
 from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 
 SEED = 42
+
+
+def validity_index_score(estimator, X):
+    try:
+        print(f"X.shape: {X.shape}, estimator: {estimator}")
+    except:
+        pass
+    y_pred = hdbscan.approximate_predict(estimator, X)
+    try:
+        print(f"y_pred: {y_pred}, n clusters: {np.unique(y_pred, return_counts=True)}")
+    except:
+        pass
+    return hdbscan.validity.validity_index(X, y_pred)
 
 
 def get_sentences(path):
@@ -96,12 +110,12 @@ class ClusteringPipeline:
         if evaluation_type == 'dbcv':
             print(f"Starting evaluation with DBCV strategy")
             # TODO - add n_iter_search and param_dist (the keys of the dict) as class arguments
-            n_iter_search = 20
+            n_iter_search = 10
             self.hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True).fit(self.training_embeddings.astype('double'))
             random_search = RandomizedSearchCV(self.hdbscan_model,
                                                param_distributions=self.param_dist,
                                                n_iter=n_iter_search,
-                                               scoring=self.validity_scorer,
+                                               scoring=validity_index_score,
                                                random_state=SEED)
             random_search.fit(self.training_embeddings.astype('double'))
             print(f"Best Parameters {random_search.best_params_}")
