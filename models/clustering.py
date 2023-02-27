@@ -18,9 +18,8 @@ def validity_index_score(estimator, X):
     except:
         pass
     y_pred = estimator.fit_predict(X)
-
     try:
-        print(f"y_pred: {y_pred}, n clusters: {np.unique(y_pred, return_counts=True)}")
+        print(f"n clusters: {len(set(y_pred))}. N.outliers: {sum(y_pred==-1)}")
     except:
         pass
     return hdbscan.validity.validity_index(X, y_pred)
@@ -85,13 +84,13 @@ class ClusteringPipeline:
         sentence_embeddings = self.sbert_model.encode(sentences)
         cosine_similarity_matrix = cosine_similarity(sentence_embeddings) if self.metric == 'precomputed' else None
         # TODO - change UMAP arguments (like as n_neighbors and n_components). Add them as arguments to this class
-        umap_model = umap.UMAP(metric='cosine')
+        umap_model = umap.UMAP(metric='cosine', n_components=5)
         umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
         return umap_sentence_embeddings, cosine_similarity_matrix
 
     def _prepare_evaluation(self):
-        self.param_dist = {'min_samples': [10, 20, 50],
-                           'min_cluster_size': [10, 20, 50, 100, 200],
+        self.param_dist = {'min_samples': [5, 10, 20, 30, 40, 50],
+                           'min_cluster_size': [5, 10, 20, 25, 50, 100],
                            'cluster_selection_method': ['eom', 'leaf'],
                            'metric': ['euclidean']
                            }
