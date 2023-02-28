@@ -1,9 +1,11 @@
+import json
 import os
 import torch
 from sklearn.model_selection import RandomizedSearchCV
 import hdbscan
 from sklearn.metrics import make_scorer
 import umap
+from umap import validation
 from sentence_transformers import SentenceTransformer
 from typing import Literal
 from sklearn.metrics.pairwise import cosine_similarity
@@ -16,7 +18,7 @@ def validity_index_score(estimator, X_test):
     X_train = estimator.prediction_data_.raw_data
     try:
         print(f"X.shape: {X_test.shape}, estimator: {estimator}")
-        print(f"X_train.shape: {X_train}")
+        print(f"X_train.shape: {X_train.shape}")
     except:
         pass
     # y_pred = estimator.fit_predict(X_test)
@@ -41,11 +43,13 @@ def get_sentences(path):
 class ClusteringPipeline:
     def __init__(self, bi_encoder_path, training_sentences: list = None,
                  metric=Literal['precomputed', 'cosine', 'euclidean'],
-                 path_training_sentences=None, check_hopkins_test=False):
+                 path_training_sentences=None, check_hopkins_test=False,
+                 validate_umap=False):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
         self.metric = metric
         self.check_hopkins_test = check_hopkins_test
+        self.validate_umap = validate_umap
         self.hdbscan_model = None
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
@@ -62,7 +66,7 @@ class ClusteringPipeline:
         if training_sentences is None:
             print(f"Loading training sentences from {self.path_training_sentences}")
             self.training_sentences = get_sentences(self.path_training_sentences)
-            # self.training_sentences = self.training_sentences[:100]
+            self.training_sentences = self.training_sentences[:100]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings, self.training_similarity_matrix = self._get_embeddings(self.training_sentences)
@@ -88,8 +92,44 @@ class ClusteringPipeline:
     def _get_embeddings(self, sentences):
         sentence_embeddings = self.sbert_model.encode(sentences)
         cosine_similarity_matrix = cosine_similarity(sentence_embeddings) if self.metric == 'precomputed' else None
+        params = {'metric': 'cosine',
+                  'n_components': 5}
         # TODO - change UMAP arguments (like as n_neighbors and n_components). Add them as arguments to this class
-        umap_model = umap.UMAP(metric='cosine', n_components=5)
+        # umap_model = umap.UMAP(metric='cosine', n_components=5)
+        # umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
+        if self.validate_umap:
+            print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
+            min_dists = (0.1, 0.5, 0.9)
+            n_components = [2, 3, 5, 10]
+            params_and_trust_values = list()
+            for min_dist in min_dists:
+                for n_c in n_components:
+                    umap_model = umap.UMAP(metric='cosine', n_components=n_c, min_dist=min_dist)
+                    umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
+                    trustworthiness = validation.trustworthiness_vector(source=sentence_embeddings.astype('double'),
+                                                                        embedding=umap_sentence_embeddings.astype(
+                                                                            'double'), max_k=30)
+                    print(f"Model params:"
+                          f"\tmin_dist: {min_dist},\tn_components: {n_c},\ttrustworthiness: {trustworthiness}")
+                    params_and_trust = {'min_dist': min_dist,
+                                        'n_components': n_c,
+                                        'trustworthiness': trustworthiness[15]}
+                    params_and_trust_values.append(params_and_trust)
+            best_params = params_and_trust_values[
+                np.argmax(list(map(lambda x: x['trustworthiness'], params_and_trust_values)))
+            ]
+            print(f"Best UMAP parameters and trustworthiness: "
+                  f"{json.dumps(best_params, indent=4)}")
+            for k, v in best_params.items():
+                if k != 'trustworthiness':
+                    params[k] = v
+            # _ = plt.plot(numerical_trustworthiness)
+            # _ = plt.plot(categorical_trustworthiness)
+            # _ = plt.ylabel("Value of K")
+            # _ = plt.xlabel(f"Trustworthiness score")
+            # _ = plt.title(f"Trustworthiness at {K}")
+            # _ = plt.legend(["numerical T", "categorical T"], loc="upper right")
+        umap_model = umap.UMAP(**params)
         umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
         return umap_sentence_embeddings, cosine_similarity_matrix
 

@@ -11,7 +11,8 @@ def main(args):
         clustering_pipe = clustering.ClusteringPipeline(bi_encoder_path=args.bi_encoder_path,
                                                         metric='cosine',
                                                         path_training_sentences=args.train_sentences_path,
-                                                        check_hopkins_test=False)
+                                                        check_hopkins_test=False,
+                                                        validate_umap=args.validate_umap)
         clustering_pipe.evaluate("dbcv")
     else:
         fine_tuner = sbert_fine_tuning.SbertFineTuning(**vars(args))
