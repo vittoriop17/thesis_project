@@ -12,17 +12,21 @@ import numpy as np
 SEED = 42
 
 
-def validity_index_score(estimator, X):
+def validity_index_score(estimator, X_test):
+    X_train = estimator.prediction_data_.raw_data
     try:
-        print(f"X.shape: {X.shape}, estimator: {estimator}")
+        print(f"X.shape: {X_test.shape}, estimator: {estimator}")
+        print(f"X_train.shape: {X_train}")
     except:
         pass
-    y_pred = estimator.fit_predict(X)
+    # y_pred = estimator.fit_predict(X_test)
+    # extract the labels predicted for the training set
+    y_pred_training = estimator.labels_
     try:
-        print(f"n clusters: {len(set(y_pred))}. N.outliers: {sum(y_pred==-1)}")
+        print(f"N clusters: {len(set(y_pred_training))}. N.outliers: {sum(y_pred_training == -1)}")
     except:
         pass
-    return hdbscan.validity.validity_index(X, y_pred)
+    return hdbscan.validity.validity_index(X_train, y_pred_training)
 
 
 def get_sentences(path):
@@ -58,6 +62,7 @@ class ClusteringPipeline:
         if training_sentences is None:
             print(f"Loading training sentences from {self.path_training_sentences}")
             self.training_sentences = get_sentences(self.path_training_sentences)
+            # self.training_sentences = self.training_sentences[:100]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings, self.training_similarity_matrix = self._get_embeddings(self.training_sentences)
@@ -92,15 +97,16 @@ class ClusteringPipeline:
         self.param_dist = {'min_samples': [5, 10, 20, 30, 40, 50],
                            'min_cluster_size': [5, 10, 20, 25, 50, 100],
                            'cluster_selection_method': ['eom', 'leaf'],
-                           'metric': ['euclidean']
+                           'metric': ['euclidean'],
+                           'prediction_data': [True]
                            }
-        self.validity_scorer = make_scorer(hdbscan.validity.validity_index, greater_is_better=True)
+        # self.validity_scorer = make_scorer(hdbscan.validity.validity_index, greater_is_better=True)
 
     def _check_hopkins(self):
         if self.check_hopkins_test:
             raise NotImplementedError("Hopkins test not implemented yet")
-            print("Evaluate 'cluster tendency' on training embeddings (after dimensionality reduction)"
-                  "Cluster tendency consists to assess if clustering algorithms are relevant for a dataset.")
+            # print("Evaluate 'cluster tendency' on training embeddings (after dimensionality reduction)"
+            #       "Cluster tendency consists to assess if clustering algorithms are relevant for a dataset.")
             # X = scale(self.training_embeddings)
             # hopkins(X, 150)
 
