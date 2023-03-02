@@ -100,7 +100,7 @@ class ClusteringPipeline:
         if self.validate_umap:
             print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
             min_dists = (0.1, 0.5, 0.9)
-            n_components = [2, 3, 5, 10]
+            n_components = [2, 3, 5]
             params_and_trust_values = list()
             for min_dist in min_dists:
                 for n_c in n_components:
@@ -108,7 +108,7 @@ class ClusteringPipeline:
                     umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
                     trustworthiness = validation.trustworthiness_vector(source=sentence_embeddings.astype('double'),
                                                                         embedding=umap_sentence_embeddings.astype(
-                                                                            'double'), max_k=30)
+                                                                            'double'), max_k=20)
                     print(f"Model params:"
                           f"\tmin_dist: {min_dist},\tn_components: {n_c},\ttrustworthiness: {trustworthiness[15]}")
                     params_and_trust = {'min_dist': min_dist,
