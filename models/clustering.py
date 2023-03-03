@@ -80,7 +80,7 @@ class ClusteringPipeline:
         if training_sentences is None:
             print(f"Loading training sentences from {self.path_training_sentences}")
             self.training_sentences = get_sentences(self.path_training_sentences)
-            # self.training_sentences = self.training_sentences[:100]
+            self.training_sentences = self.training_sentences[:100]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings, self.training_similarity_matrix = self._get_embeddings(self.training_sentences)
@@ -203,6 +203,9 @@ class ClusteringPipeline:
               f"\tdavies_bouldin_score: the lower the better.")
 
     def plot_clusters(self, sentences):
+        # N.b.: the HDBSCAN algorithm is applied to the sentence embedding in a N-dimensional space.
+        # then, the cluster information is used to plot the datapoints in a 2-dimensional space.
+        # thus, be aware that the data for HDBSCAN and the data used for visualization lie in two different spaces!
         umap_params = {'metric': 'cosine',
                        'n_components': 2,
                        'min_dist': 0.1,
@@ -215,7 +218,7 @@ class ClusteringPipeline:
         predictions = np.array(predictions).astype('int')
         n_clusters = len(set(predictions))
         colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)]) / 255
-        colors = [sns.desaturate(c, p) for c, p in zip(colors[predictions], probs)]
-        plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1], c=colors[predictions])
+        colors = np.array([sns.desaturate(c, p) for c, p in zip(colors[predictions], probs)])
+        plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1], c=colors[predictions], s=10)
 
 
