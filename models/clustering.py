@@ -218,8 +218,8 @@ class ClusteringPipeline:
         print(predictions)
         predictions = np.array(predictions).astype('int') + 1
         n_clusters = len(set(predictions))
-        colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)])
-        colors[0] = (255, 0, 0)
+        colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)]) / 255
+        colors[0] = (1, 0, 0)
         plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1],
                     alpha=0.5, c=colors[predictions], s=1)
         plt.savefig("clustering.png", bbox_inches='tight')
