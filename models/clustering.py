@@ -215,12 +215,17 @@ class ClusteringPipeline:
         sentence_embeddings_for_clustering = self.umap_model.transform(sentences)
         predictions, probs = hdbscan.approximate_predict(self.hdbscan_model, sentence_embeddings_for_clustering)
         print(predictions)
-        predictions = np.array(predictions).astype('int')
+        predictions = np.array(predictions).astype('int') + 1
         n_clusters = len(set(predictions))
         colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)]) / 255
         colors = np.array([sns.desaturate(c, p) for c, p in zip(colors[predictions], probs)])
-        plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1], c=colors[predictions], s=10)
+        plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1], c=colors[predictions], s=1)
         plt.savefig("clustering.png", bbox_inches='tight')
+        plt.show()
+        predictions_wo_outliers = predictions[predictions!=0]
+        colors_wo_outlies = np.array([sns.desaturate(c, p) for c, p in zip(colors[predictions_wo_outliers], probs)])
+        plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1], c=colors_wo_outlies[predictions_wo_outliers], s=1)
+        plt.savefig("clustering_wo_outliers.png", bbox_inches='tight')
         plt.show()
 
 
