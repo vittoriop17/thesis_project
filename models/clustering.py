@@ -94,11 +94,8 @@ class ClusteringPipeline:
         cosine_similarity_matrix = cosine_similarity(sentence_embeddings) if self.metric == 'precomputed' else None
         params = {'metric': 'cosine',
                   'n_components': 5,
-                  'min_dist': 0.9,
+                  'min_dist': 0.1,
                   'n_neighbors': 20}
-        # TODO - change UMAP arguments (like as n_neighbors and n_components). Add them as arguments to this class
-        # umap_model = umap.UMAP(metric='cosine', n_components=5)
-        # umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
         if self.validate_umap:
             print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
             min_dists = (0.1, 0.9)
@@ -138,13 +135,12 @@ class ClusteringPipeline:
         return umap_sentence_embeddings, cosine_similarity_matrix
 
     def _prepare_evaluation(self):
-        self.param_dist = {'min_samples': [5, 10, 20, 30, 40, 50],
-                           'min_cluster_size': [5, 10, 20, 25, 50, 100],
+        self.param_dist = {'min_samples': [5, 10, 25, 50],
+                           'min_cluster_size': [5, 10, 25, 50, 100],
                            'cluster_selection_method': ['eom', 'leaf'],
                            'metric': ['euclidean'],
                            'prediction_data': [True]
                            }
-        # self.validity_scorer = make_scorer(hdbscan.validity.validity_index, greater_is_better=True)
 
     def _check_hopkins(self):
         if self.check_hopkins_test:
