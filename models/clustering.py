@@ -203,6 +203,7 @@ class ClusteringPipeline:
               f"\tdavies_bouldin_score: the lower the better.")
 
     def plot_clusters(self, sentences):
+        # TODO - save data
         # N.b.: the HDBSCAN algorithm is applied to the sentence embedding in a N-dimensional space.
         # then, the cluster information is used to plot the datapoints in a 2-dimensional space.
         # thus, be aware that the data for HDBSCAN and the data used for visualization lie in two different spaces!
@@ -218,6 +219,7 @@ class ClusteringPipeline:
         predictions = np.array(predictions).astype('int') + 1
         n_clusters = len(set(predictions))
         colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)])
+        colors[0] = (255, 0, 0)
         plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1],
                     alpha=0.5, c=colors[predictions], s=1)
         plt.savefig("clustering.png", bbox_inches='tight')
