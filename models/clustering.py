@@ -106,6 +106,7 @@ class ClusteringPipeline:
             self._validate_umap(sentence_embeddings)
         umap_model = umap.UMAP(**self.umap_params)
         umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
+        self.umap_model = umap_model
         return umap_sentence_embeddings, cosine_similarity_matrix
 
     def _validate_umap(self, sentence_embeddings):
@@ -179,12 +180,13 @@ class ClusteringPipeline:
                        'n_components': 2,
                        'min_dist': 0.1,
                        'n_neighbors': 10}
-        umap_model = umap.UMAP(**umap_params)
-        bidim_embeddings = umap_model.fit_transform(sentences)
-        predictions, probs = np.array(hdbscan.approximate_predict(self.hdbscan_model, bidim_embeddings))
+        bi_dim_umap_model = umap.UMAP(**umap_params)
+        bidim_sentence_embeddings = bi_dim_umap_model.fit_transform(sentences)
+        sentence_embeddings_for_clustering = self.umap_model.transform(sentences)
+        predictions, probs = np.array(hdbscan.approximate_predict(self.hdbscan_model, sentence_embeddings_for_clustering))
         n_clusters = len(set(predictions))
         colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)])
         colors = [sns.desaturate(c, p) for c, p in zip(colors[predictions], probs)]
-        plt.scatter(x=bidim_embeddings[:,0], y=bidim_embeddings[:,1], c=colors[predictions])
+        plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1], c=colors[predictions])
 
 
