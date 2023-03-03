@@ -202,7 +202,8 @@ class ClusteringPipeline:
         bi_dim_umap_model = umap.UMAP(**umap_params)
         bidim_sentence_embeddings = bi_dim_umap_model.fit_transform(sentences)
         sentence_embeddings_for_clustering = self.umap_model.transform(sentences)
-        predictions, probs = np.array(hdbscan.approximate_predict(self.hdbscan_model, sentence_embeddings_for_clustering))
+        predictions, probs = hdbscan.approximate_predict(self.hdbscan_model, sentence_embeddings_for_clustering)
+        predictions = np.array(predictions)
         n_clusters = len(set(predictions))
         colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)])
         colors = [sns.desaturate(c, p) for c, p in zip(colors[predictions], probs)]
