@@ -93,28 +93,32 @@ class ClusteringPipeline:
         sentence_embeddings = self.sbert_model.encode(sentences)
         cosine_similarity_matrix = cosine_similarity(sentence_embeddings) if self.metric == 'precomputed' else None
         params = {'metric': 'cosine',
-                  'n_components': 5}
+                  'n_components': 5,
+                  'min_dist': 0.9,
+                  'n_neighbors': 20}
         # TODO - change UMAP arguments (like as n_neighbors and n_components). Add them as arguments to this class
         # umap_model = umap.UMAP(metric='cosine', n_components=5)
         # umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
         if self.validate_umap:
             print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
-            min_dists = (0.1, 0.5, 0.9)
-            n_components = [2, 3, 5]
+            min_dists = (0.1, 0.9)
+            n_components = [2, 5]
+            metrics = ['cosine', 'euclidean']
             params_and_trust_values = list()
             for min_dist in min_dists:
                 for n_c in n_components:
-                    umap_model = umap.UMAP(metric='cosine', n_components=n_c, min_dist=min_dist)
-                    umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
-                    trustworthiness = validation.trustworthiness_vector(source=sentence_embeddings.astype('double'),
-                                                                        embedding=umap_sentence_embeddings.astype(
-                                                                            'double'), max_k=20)
-                    print(f"Model params:"
-                          f"\tmin_dist: {min_dist},\tn_components: {n_c},\ttrustworthiness: {trustworthiness[15]}")
-                    params_and_trust = {'min_dist': min_dist,
-                                        'n_components': n_c,
-                                        'trustworthiness': trustworthiness[15]}
-                    params_and_trust_values.append(params_and_trust)
+                    for metric in metrics:
+                        umap_model = umap.UMAP(metric=metric, n_components=n_c, min_dist=min_dist)
+                        umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
+                        trustworthiness = validation.trustworthiness_vector(source=sentence_embeddings.astype('double'),
+                                                                            embedding=umap_sentence_embeddings.astype(
+                                                                                'double'), max_k=20)
+                        print(f"Model params:"
+                              f"\tmin_dist: {min_dist},\tn_components: {n_c},\ttrustworthiness: {trustworthiness[15]}")
+                        params_and_trust = {'min_dist': min_dist,
+                                            'n_components': n_c,
+                                            'trustworthiness': trustworthiness[15]}
+                        params_and_trust_values.append(params_and_trust)
             best_params = params_and_trust_values[
                 np.argmax(list(map(lambda x: x['trustworthiness'], params_and_trust_values)))
             ]
@@ -164,7 +168,7 @@ class ClusteringPipeline:
                                                scoring=validity_index_score,
                                                random_state=SEED)
             random_search.fit(self.training_embeddings.astype('double'))
-            print(f"Best Parameters {random_search.best_params_}")
-            print(f"DBCV score :{random_search.best_estimator_.relative_validity_}")
+            print(f"\nBest Parameters {random_search.best_params_}")
+            print(f"\nDBCV score :{random_search.best_estimator_.relative_validity_}")
         else:
             raise NotImplementedError("CVPS validation technique not implemented yet")
