@@ -97,7 +97,7 @@ class ClusteringPipeline:
         params = {'metric': 'cosine',
                   'n_components': 5,
                   'min_dist': 0.1,
-                  'n_neighbors': 20}
+                  'n_neighbors': 10}
         if self.validate_umap:
             print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
             min_dists = (0.1, 0.9)
@@ -131,8 +131,8 @@ class ClusteringPipeline:
         return umap_sentence_embeddings, cosine_similarity_matrix
 
     def _prepare_evaluation(self):
-        self.param_dist = {'min_samples': [5, 10, 25, 50],
-                           'min_cluster_size': [5, 10, 25, 50, 100],
+        self.param_dist = {'min_samples': [1, 5, 10, 25, 50],
+                           'min_cluster_size': [5, 10, 25, 50],
                            'cluster_selection_method': ['eom', 'leaf'],
                            'metric': ['euclidean'],
                            'prediction_data': [True],
