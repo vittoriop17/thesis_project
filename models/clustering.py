@@ -13,6 +13,7 @@ import numpy as np
 from joblib import Memory
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score
 
 LOCATION = '/tmp/joblib'
 SEED = 42
@@ -175,6 +176,24 @@ class ClusteringPipeline:
 
     def train_over_all_sentences(self):
         self.hdbscan_model.fit(self.training_embeddings.astype('double'))
+        # test_labels, _ = hdbscan.approximate_predict(self.hdbscan_model, self.test_sentences)
+        # Drawbacks
+        # The Calinski-Harabasz AND davies_bouldin_score index is generally higher for convex clusters than other concepts of clusters,
+        # such as density based clusters like those obtained through DBSCAN.
+        print(f"Evaluation on training data:"
+              f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.training_embeddings, self.hdbscan_model.labels_)}"
+              f"\t(davies_bouldin_score): {davies_bouldin_score(self.training_embeddings, self.hdbscan_model.labels_)}"
+              f"\n\n"
+              
+              f"Evaluation on test data: TODO"
+              # f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.test_embeddings, test_labels)}"
+              # f"\t(davies_bouldin_score): {davies_bouldin_score(self.test_embeddings, test_labels)}"
+              
+              f"\n\n"
+              f"Note: \n"
+              f"\tcalinski_harabasz_score: the larger the better.\n"
+              f"\tdavies_bouldin_score: the lower the better.")
+
     def plot_clusters(self, sentences):
         umap_params = {'metric': 'cosine',
                        'n_components': 2,
