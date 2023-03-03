@@ -12,6 +12,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from joblib import Memory
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 LOCATION = '/tmp/joblib'
 SEED = 42
@@ -180,9 +181,10 @@ class ClusteringPipeline:
                        'n_neighbors': 10}
         umap_model = umap.UMAP(**umap_params)
         bidim_embeddings = umap_model.fit_transform(sentences)
-        predictions = np.array(self.hdbscan_model.approximate_predict(bidim_embeddings))
+        predictions, probs = np.array(hdbscan.approximate_predict(self.hdbscan_model, bidim_embeddings))
         n_clusters = len(set(predictions))
         colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)])
+        colors = [sns.desaturate(c, p) for c, p in zip(colors[predictions], probs)]
         plt.scatter(x=bidim_embeddings[:,0], y=bidim_embeddings[:,1], c=colors[predictions])
 
 
