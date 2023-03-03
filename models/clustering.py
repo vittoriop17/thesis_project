@@ -80,7 +80,7 @@ class ClusteringPipeline:
         if training_sentences is None:
             print(f"Loading training sentences from {self.path_training_sentences}")
             self.training_sentences = get_sentences(self.path_training_sentences)
-            self.training_sentences = self.training_sentences[:100]
+            # self.training_sentences = self.training_sentences[:100]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings, self.training_similarity_matrix = self._get_embeddings(self.training_sentences)
@@ -220,5 +220,7 @@ class ClusteringPipeline:
         colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)]) / 255
         colors = np.array([sns.desaturate(c, p) for c, p in zip(colors[predictions], probs)])
         plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1], c=colors[predictions], s=10)
+        plt.show()
+        plt.savefig("clustering.png", bbox_inches='tight')
 
 
