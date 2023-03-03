@@ -225,7 +225,7 @@ class ClusteringPipeline:
         plt.savefig("clustering.png", bbox_inches='tight')
         plt.show()
         predictions_wo_outliers = predictions[predictions!=0]
-        colors_wo_outliers = colors[predictions!=0]
+        colors_wo_outliers = colors[predictions_wo_outliers]
         bidim_sentence_embeddings_wo_outlies = bidim_sentence_embeddings[predictions!=0, :]
         plt.scatter(x=bidim_sentence_embeddings_wo_outlies[:, 0], y=bidim_sentence_embeddings_wo_outlies[:, 1],
                     alpha=0.5, c=colors_wo_outliers[predictions_wo_outliers], s=1)
