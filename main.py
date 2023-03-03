@@ -12,9 +12,11 @@ def main(args):
                                                         metric='cosine',
                                                         path_training_sentences=args.train_sentences_path,
                                                         check_hopkins_test=False,
-                                                        validate_umap=args.validate_umap)
+                                                        validate_umap=args.validate_umap,
+                                                        n_components=args.n_components)
         clustering_pipe.evaluate("dbcv")
-
+        clustering_pipe.train_over_all_sentences()
+        clustering_pipe.plot_clusters(clustering_pipe.original_sentence_embeddings)
     else:
         fine_tuner = sbert_fine_tuning.SbertFineTuning(**vars(args))
         fine_tuner.read_silver_set()

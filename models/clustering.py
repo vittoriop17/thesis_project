@@ -11,8 +11,9 @@ from typing import Literal
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from joblib import Memory
+import matplotlib.pyplot as plt
 
-LOCATION='/tmp/joblib'
+LOCATION = '/tmp/joblib'
 SEED = 42
 
 
@@ -46,13 +47,18 @@ class ClusteringPipeline:
     def __init__(self, bi_encoder_path, training_sentences: list = None,
                  metric=Literal['precomputed', 'cosine', 'euclidean'],
                  path_training_sentences=None, check_hopkins_test=False,
-                 validate_umap=False):
+                 validate_umap=False, n_components=5):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
         self.metric = metric
+        self.n_components = n_components
         self.check_hopkins_test = check_hopkins_test
         self.validate_umap = validate_umap
         self.hdbscan_model = None
+        self.umap_params = {'metric': 'cosine',
+                            'n_components': self.n_components,
+                            'min_dist': 0.1,
+                            'n_neighbors': 10}
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
         self.path_training_sentences = path_training_sentences
@@ -93,42 +99,40 @@ class ClusteringPipeline:
 
     def _get_embeddings(self, sentences):
         sentence_embeddings = self.sbert_model.encode(sentences)
+        self.original_sentence_embeddings = sentence_embeddings
         cosine_similarity_matrix = cosine_similarity(sentence_embeddings) if self.metric == 'precomputed' else None
-        params = {'metric': 'cosine',
-                  'n_components': 5,
-                  'min_dist': 0.1,
-                  'n_neighbors': 10}
         if self.validate_umap:
-            print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
-            min_dists = (0.1, 0.9)
-            n_components = [2, 5]
-            metrics = ['cosine', 'euclidean']
-            params_and_trust_values = list()
-            for min_dist in min_dists:
-                for n_c in n_components:
-                    for metric in metrics:
-                        umap_model = umap.UMAP(metric=metric, n_components=n_c, min_dist=min_dist)
-                        umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
-                        trustworthiness = validation.trustworthiness_vector(source=sentence_embeddings.astype('double'),
-                                                                            embedding=umap_sentence_embeddings.astype(
-                                                                                'double'), max_k=20)
-                        print(f"Model params:"
-                              f"\tmin_dist: {min_dist},\tn_components: {n_c},\tmetric: {metric}\ttrustworthiness: {trustworthiness[15]}")
-                        params_and_trust = {'min_dist': min_dist,
-                                            'n_components': n_c,
-                                            'trustworthiness': trustworthiness[15]}
-                        params_and_trust_values.append(params_and_trust)
-            best_params = params_and_trust_values[
-                np.argmax(list(map(lambda x: x['trustworthiness'], params_and_trust_values)))
-            ]
-            print(f"Best UMAP parameters and trustworthiness: "
-                  f"{json.dumps(best_params, indent=4)}")
-            for k, v in best_params.items():
-                if k != 'trustworthiness':
-                    params[k] = v
-        umap_model = umap.UMAP(**params)
+            self._validate_umap(sentence_embeddings)
+        umap_model = umap.UMAP(**self.umap_params)
         umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
         return umap_sentence_embeddings, cosine_similarity_matrix
+
+    def _validate_umap(self, sentence_embeddings):
+        print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
+        min_dists = (0.1, 0.9)
+        n_components = [2, 5]
+        metrics = ['cosine', 'euclidean']
+        params_and_trust_values = list()
+        for min_dist in min_dists:
+            for n_c in n_components:
+                for metric in metrics:
+                    umap_model = umap.UMAP(metric=metric, n_components=n_c, min_dist=min_dist)
+                    umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
+                    trustworthiness = validation.trustworthiness_vector(source=sentence_embeddings.astype('double'),
+                                                                        embedding=umap_sentence_embeddings.astype(
+                                                                            'double'), max_k=20)
+                    print(f"Model params:"
+                          f"\tmin_dist: {min_dist},\tn_components: {n_c},\tmetric: {metric}\ttrustworthiness: {trustworthiness[15]}")
+                    params_and_trust = {'min_dist': min_dist,
+                                        'n_components': n_c,
+                                        'trustworthiness': trustworthiness[15]}
+                    params_and_trust_values.append(params_and_trust)
+        best_params = params_and_trust_values[np.argmax(list(map(lambda x: x['trustworthiness'], params_and_trust_values)))]
+        print(f"Best UMAP parameters and trustworthiness: "
+              f"{json.dumps(best_params, indent=4)}")
+        for k, v in best_params.items():
+            if k != 'trustworthiness':
+                self.umap_params[k] = v
 
     def _prepare_evaluation(self):
         self.param_dist = {'min_samples': [1, 5, 10, 25, 50],
@@ -166,3 +170,19 @@ class ClusteringPipeline:
             self.hdbscan_model = random_search.best_estimator_
         else:
             raise NotImplementedError("CVPS validation technique not implemented yet")
+
+    def train_over_all_sentences(self):
+        self.hdbscan_model.fit(self.training_embeddings.astype('double'))
+    def plot_clusters(self, sentences):
+        umap_params = {'metric': 'cosine',
+                       'n_components': 2,
+                       'min_dist': 0.1,
+                       'n_neighbors': 10}
+        umap_model = umap.UMAP(**umap_params)
+        bidim_embeddings = umap_model.fit_transform(sentences)
+        predictions = np.array(self.hdbscan_model.approximate_predict(bidim_embeddings))
+        n_clusters = len(set(predictions))
+        colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)])
+        plt.scatter(x=bidim_embeddings[:,0], y=bidim_embeddings[:,1], c=colors[predictions])
+
+

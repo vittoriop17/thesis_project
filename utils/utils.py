@@ -175,6 +175,8 @@ def upload_args(file_path=None):
     parser.add_argument("--validate_umap", action="store_true", default=False,
                         help="Boolean flag. If specified, apply UMAP model validation "
                              "(min_dist and n_components are fine-tuned, based on trustworthiness metric)")
+    parser.add_argument("--n_components", default=5, type=int,
+                        help="number of components for UMAP dimensionality reduction")
 
     args = parser.parse_args()
     file_path = getattr(args, 'config_file_path') if getattr(args, 'config_file_path') is not None else file_path
