@@ -220,7 +220,8 @@ class ClusteringPipeline:
         colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)]) / 255
         colors = np.array([sns.desaturate(c, p) for c, p in zip(colors[predictions], probs)])
         plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1], c=colors[predictions], s=10)
-        plt.show()
         plt.savefig("clustering.png", bbox_inches='tight')
+        plt.show()
+
 
 
