@@ -205,7 +205,7 @@ class ClusteringPipeline:
         predictions, probs = hdbscan.approximate_predict(self.hdbscan_model, sentence_embeddings_for_clustering)
         predictions = np.array(predictions)
         n_clusters = len(set(predictions))
-        colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)])
+        colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)]) / 255
         colors = [sns.desaturate(c, p) for c, p in zip(colors[predictions], probs)]
         plt.scatter(x=bidim_sentence_embeddings[:, 0], y=bidim_sentence_embeddings[:, 1], c=colors[predictions])
 
