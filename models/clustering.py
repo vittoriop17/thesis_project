@@ -170,7 +170,7 @@ class ClusteringPipeline:
                                                n_iter=n_iter_search,
                                                scoring=validity_index_score,
                                                random_state=SEED)
-            random_search.fit(self.training_embeddings.astype)
+            random_search.fit(self.training_embeddings)
             print(f"\nBest Parameters {random_search.best_params_}")
             print(f"\nDBCV score :{random_search.best_estimator_.relative_validity_}")
             print(f"Saving best model")
@@ -181,7 +181,7 @@ class ClusteringPipeline:
     def train_over_all_sentences(self):
         if self.hdbscan_model is None:
             self.hdbscan_model = hdbscan.HDBSCAN(prediction_data=True, gen_min_span_tree=True, **self.hdbscan_params)
-        self.hdbscan_model.fit(self.training_embeddings.astype)
+        self.hdbscan_model.fit(self.training_embeddings)
         # test_labels, _ = hdbscan.approximate_predict(self.hdbscan_model, self.test_sentences)
         # Drawbacks
         # The Calinski-Harabasz AND davies_bouldin_score index is generally higher for convex clusters than other concepts of clusters,
@@ -189,7 +189,7 @@ class ClusteringPipeline:
         print(f"Evaluation on training data:"
               f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\t(davies_bouldin_score): {davies_bouldin_score(self.training_embeddings, self.hdbscan_model.labels_)}"
-              f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings.astype, self.hdbscan_model.labels_)}"
+              f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\n\n"
               
               f"Evaluation on test data: TODO"
