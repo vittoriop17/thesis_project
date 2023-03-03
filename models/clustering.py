@@ -63,7 +63,8 @@ class ClusteringPipeline:
                             'n_neighbors': 10}
         self.hdbscan_params = {'min_samples': 5,
                                'min_cluster_size': 10,
-                               'cluster_selection_method': 'leaf'}
+                               'metric': 'euclidean',
+                               'cluster_selection_method': 'eom'}
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
         self.path_training_sentences = path_training_sentences
@@ -188,12 +189,14 @@ class ClusteringPipeline:
         print(f"Evaluation on training data:"
               f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\t(davies_bouldin_score): {davies_bouldin_score(self.training_embeddings, self.hdbscan_model.labels_)}"
+              f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\n\n"
               
               f"Evaluation on test data: TODO"
               # f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.test_embeddings, test_labels)}"
               # f"\t(davies_bouldin_score): {davies_bouldin_score(self.test_embeddings, test_labels)}"
-              
+              # f"\tValidity index: {hdbscan.validity.validity_index(self.test_embeddings, test_labels)}"
+
               f"\n\n"
               f"Note: \n"
               f"\tcalinski_harabasz_score: the larger the better.\n"
