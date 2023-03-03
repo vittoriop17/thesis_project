@@ -14,6 +14,7 @@ def main(args):
                                                         check_hopkins_test=False,
                                                         validate_umap=args.validate_umap)
         clustering_pipe.evaluate("dbcv")
+
     else:
         fine_tuner = sbert_fine_tuning.SbertFineTuning(**vars(args))
         fine_tuner.read_silver_set()

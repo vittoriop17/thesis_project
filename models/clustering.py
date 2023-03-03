@@ -10,7 +10,9 @@ from sentence_transformers import SentenceTransformer
 from typing import Literal
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
+from joblib import Memory
 
+LOCATION='/tmp/joblib'
 SEED = 42
 
 
@@ -124,12 +126,6 @@ class ClusteringPipeline:
             for k, v in best_params.items():
                 if k != 'trustworthiness':
                     params[k] = v
-            # _ = plt.plot(numerical_trustworthiness)
-            # _ = plt.plot(categorical_trustworthiness)
-            # _ = plt.ylabel("Value of K")
-            # _ = plt.xlabel(f"Trustworthiness score")
-            # _ = plt.title(f"Trustworthiness at {K}")
-            # _ = plt.legend(["numerical T", "categorical T"], loc="upper right")
         umap_model = umap.UMAP(**params)
         umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
         return umap_sentence_embeddings, cosine_similarity_matrix
@@ -139,7 +135,8 @@ class ClusteringPipeline:
                            'min_cluster_size': [5, 10, 25, 50, 100],
                            'cluster_selection_method': ['eom', 'leaf'],
                            'metric': ['euclidean'],
-                           'prediction_data': [True]
+                           'prediction_data': [True],
+                           'memory': [Memory(LOCATION, verbose=0)]
                            }
 
     def _check_hopkins(self):
@@ -155,7 +152,6 @@ class ClusteringPipeline:
                                                     f"Found: {evaluation_type}"
         if evaluation_type == 'dbcv':
             print(f"Starting evaluation with DBCV strategy")
-            # TODO - add n_iter_search and param_dist (the keys of the dict) as class arguments
             n_iter_search = 10
             self.hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True).fit(self.training_embeddings.astype('double'))
             random_search = RandomizedSearchCV(self.hdbscan_model,
@@ -166,5 +162,7 @@ class ClusteringPipeline:
             random_search.fit(self.training_embeddings.astype('double'))
             print(f"\nBest Parameters {random_search.best_params_}")
             print(f"\nDBCV score :{random_search.best_estimator_.relative_validity_}")
+            print(f"Saving best model")
+            self.hdbscan_model = random_search.best_estimator_
         else:
             raise NotImplementedError("CVPS validation technique not implemented yet")
