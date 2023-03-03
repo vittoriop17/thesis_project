@@ -114,7 +114,7 @@ class ClusteringPipeline:
                                                                             embedding=umap_sentence_embeddings.astype(
                                                                                 'double'), max_k=20)
                         print(f"Model params:"
-                              f"\tmin_dist: {min_dist},\tn_components: {n_c},\ttrustworthiness: {trustworthiness[15]}")
+                              f"\tmin_dist: {min_dist},\tn_components: {n_c},\tmetric: {metric}\ttrustworthiness: {trustworthiness[15]}")
                         params_and_trust = {'min_dist': min_dist,
                                             'n_components': n_c,
                                             'trustworthiness': trustworthiness[15]}
