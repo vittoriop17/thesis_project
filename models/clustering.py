@@ -61,6 +61,9 @@ class ClusteringPipeline:
                             'n_components': self.n_components,
                             'min_dist': 0.1,
                             'n_neighbors': 10}
+        self.hdbscan_params = {'min_samples': 5,
+                               'min_cluster_size': 10,
+                               'cluster_selection_method': 'leaf'}
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
         self.path_training_sentences = path_training_sentences
@@ -160,8 +163,8 @@ class ClusteringPipeline:
         if evaluation_type == 'dbcv':
             print(f"Starting evaluation with DBCV strategy")
             n_iter_search = 10
-            self.hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True).fit(self.training_embeddings.astype('double'))
-            random_search = RandomizedSearchCV(self.hdbscan_model,
+            hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True).fit(self.training_embeddings.astype('double'))
+            random_search = RandomizedSearchCV(hdbscan_model,
                                                param_distributions=self.param_dist,
                                                n_iter=n_iter_search,
                                                scoring=validity_index_score,
@@ -175,6 +178,8 @@ class ClusteringPipeline:
             raise NotImplementedError("CVPS validation technique not implemented yet")
 
     def train_over_all_sentences(self):
+        if self.hdbscan_model is None:
+            self.hdbscan_model = hdbscan.HDBSCAN(prediction_data=True, gen_min_span_tree=True, **self.hdbscan_params)
         self.hdbscan_model.fit(self.training_embeddings.astype('double'))
         # test_labels, _ = hdbscan.approximate_predict(self.hdbscan_model, self.test_sentences)
         # Drawbacks

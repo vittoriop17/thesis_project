@@ -14,7 +14,8 @@ def main(args):
                                                         check_hopkins_test=False,
                                                         validate_umap=args.validate_umap,
                                                         n_components=args.n_components)
-        clustering_pipe.evaluate("dbcv")
+        if args.validate_hdbscan:
+            clustering_pipe.evaluate("dbcv")
         clustering_pipe.train_over_all_sentences()
         clustering_pipe.plot_clusters(clustering_pipe.original_sentence_embeddings)
     else:
