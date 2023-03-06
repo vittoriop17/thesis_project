@@ -8,12 +8,7 @@ import umap
 
 def main(args):
     if args.no_fine_tuning:
-        clustering_pipe = clustering.ClusteringPipeline(bi_encoder_path=args.bi_encoder_path,
-                                                        metric='cosine',
-                                                        path_training_sentences=args.train_sentences_path,
-                                                        check_hopkins_test=False,
-                                                        validate_umap=args.validate_umap,
-                                                        n_components=args.n_components)
+        clustering_pipe = clustering.ClusteringPipeline(**args)
         if args.validate_hdbscan:
             clustering_pipe.evaluate("dbcv")
         clustering_pipe.train_over_all_sentences()

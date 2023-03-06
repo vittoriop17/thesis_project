@@ -50,7 +50,8 @@ class ClusteringPipeline:
                  metric=Literal['precomputed', 'cosine', 'euclidean'],
                  path_training_sentences=None, check_hopkins_test=False,
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
-                 hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean', hdbscan_cluster_method='eom'):
+                 hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean', hdbscan_cluster_method='eom',
+                 **kwargs):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
         self.metric = metric
