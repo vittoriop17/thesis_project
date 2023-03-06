@@ -194,7 +194,7 @@ class ClusteringPipeline:
               f"\n\n"
               
               f"Number of clusters: {len(set(self.hdbscan_model.labels_))}\n"
-              f"Number of outliers: {sum(self.hdbscan_model.labels_)}"
+              f"Number of outliers: {sum(self.hdbscan_model.labels_==-1)}"
               f"\n\n"
 
               f"Evaluation on test data: TODO"
