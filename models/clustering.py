@@ -59,12 +59,12 @@ class ClusteringPipeline:
         self.hdbscan_model = None
         self.umap_params = {'metric': 'cosine',
                             'n_components': self.n_components,
-                            'min_dist': 0.5,
+                            'min_dist': 0.1,
                             'n_neighbors': 15}
-        self.hdbscan_params = {'min_samples': 2,
-                               'min_cluster_size': 4,
+        self.hdbscan_params = {'min_samples': 5,
+                               'min_cluster_size': 5,
                                'metric': 'euclidean',
-                               'cluster_selection_method': 'leaf'}
+                               'cluster_selection_method': 'eom'}
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
         self.path_training_sentences = path_training_sentences
@@ -193,8 +193,8 @@ class ClusteringPipeline:
               f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\n\n"
               
-              # f"Number of clusters: {len(set(self.hdbscan_model.labels_))}\n"
-              # f"Number of outliers: {sum(self.hdbscan_model.labels_)}"
+              f"Number of clusters: {len(set(self.hdbscan_model.labels_))}\n"
+              f"Number of outliers: {sum(self.hdbscan_model.labels_)}"
               f"\n\n"
 
               f"Evaluation on test data: TODO"
