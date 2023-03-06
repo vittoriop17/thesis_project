@@ -49,7 +49,8 @@ class ClusteringPipeline:
     def __init__(self, bi_encoder_path, training_sentences: list = None,
                  metric=Literal['precomputed', 'cosine', 'euclidean'],
                  path_training_sentences=None, check_hopkins_test=False,
-                 validate_umap=False, n_components=5):
+                 validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
+                 hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean', hdbscan_cluster_method='eom'):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
         self.metric = metric
@@ -57,14 +58,14 @@ class ClusteringPipeline:
         self.check_hopkins_test = check_hopkins_test
         self.validate_umap = validate_umap
         self.hdbscan_model = None
-        self.umap_params = {'metric': 'cosine',
+        self.umap_params = {'metric': umap_metric,
                             'n_components': self.n_components,
-                            'min_dist': 0.1,
-                            'n_neighbors': 15}
-        self.hdbscan_params = {'min_samples': 5,
-                               'min_cluster_size': 5,
-                               'metric': 'euclidean',
-                               'cluster_selection_method': 'eom'}
+                            'min_dist': umap_min_dist,
+                            'n_neighbors': umap_n_neighbors}
+        self.hdbscan_params = {'min_samples': hdbscan_min_samples,
+                               'min_cluster_size': hdbscan_min_cluster_size,
+                               'metric': hdbscan_metric,
+                               'cluster_selection_method': hdbscan_cluster_method}
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
         self.path_training_sentences = path_training_sentences

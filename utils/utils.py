@@ -179,7 +179,20 @@ def upload_args(file_path=None):
                         help="Boolean flag. If specified, apply HDBSCAN model validation with DBCV metric")
     parser.add_argument("--n_components", default=5, type=int,
                         help="number of components for UMAP dimensionality reduction")
-
+    parser.add_argument("--umap_min_dist", default=0.1, type=float,
+                        help="Min_dist parameter for umap")
+    parser.add_argument("--umap_n_neighbors", default=15, type=int,
+                        help="number of neighbors for UMAP dimensionality reduction")
+    parser.add_argument("--umap_metric", default='cosine', type=str,
+                        help="Distance metric used for UMAP dimensionality reduction")
+    parser.add_argument("--hdbscan_min_samples", default=5, type=int,
+                        help="min_samples argument for HDBSCAN")
+    parser.add_argument("--hdbscan_min_cluster_size", default=5, type=int,
+                        help="min_cluster_size argument for HDBSCAN")
+    parser.add_argument("--hdbscan_metric", default='euclidean', type=str,
+                        help="Distance metric for HDBSCAN")
+    parser.add_argument("--hdbscan_cluster_method", default='eom', type=str,
+                        help="Cluster method selection for HDBSCAN")
     args = parser.parse_args()
     file_path = getattr(args, 'config_file_path') if getattr(args, 'config_file_path') is not None else file_path
     args = upload_args_from_json(args, file_path) if file_path is not None else args
