@@ -59,12 +59,12 @@ class ClusteringPipeline:
         self.hdbscan_model = None
         self.umap_params = {'metric': 'cosine',
                             'n_components': self.n_components,
-                            'min_dist': 0.9,
+                            'min_dist': 0.1,
                             'n_neighbors': 10}
         self.hdbscan_params = {'min_samples': 5,
-                               'min_cluster_size': 2,
+                               'min_cluster_size': 10,
                                'metric': 'euclidean',
-                               'cluster_selection_method': 'leaf'}
+                               'cluster_selection_method': 'eom'}
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
         self.path_training_sentences = path_training_sentences
@@ -134,7 +134,8 @@ class ClusteringPipeline:
                                         'n_components': n_c,
                                         'trustworthiness': trustworthiness[15]}
                     params_and_trust_values.append(params_and_trust)
-        best_params = params_and_trust_values[np.argmax(list(map(lambda x: x['trustworthiness'], params_and_trust_values)))]
+        best_params = params_and_trust_values[
+            np.argmax(list(map(lambda x: x['trustworthiness'], params_and_trust_values)))]
         print(f"Best UMAP parameters and trustworthiness: "
               f"{json.dumps(best_params, indent=4)}")
         for k, v in best_params.items():
@@ -191,11 +192,7 @@ class ClusteringPipeline:
               f"\t(davies_bouldin_score): {davies_bouldin_score(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\n\n"
-              
-              f"Number of clusters: {len(set(self.hdbscan_model.labels_))}\n"
-              f"Number of outliers: {sum(self.hdbscan_model.labels_==-1)}\n"
-              f"\n\n"
-    
+
               f"Evaluation on test data: TODO"
               # f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.test_embeddings, test_labels)}"
               # f"\t(davies_bouldin_score): {davies_bouldin_score(self.test_embeddings, test_labels)}"
@@ -228,9 +225,9 @@ class ClusteringPipeline:
                     alpha=0.5, c=colors[predictions], s=1)
         plt.savefig("clustering.png", bbox_inches='tight')
         plt.show()
-        predictions_wo_outliers = predictions[predictions!=0]
-        colors_wo_outliers = colors[predictions_wo_outliers]
-        bidim_sentence_embeddings_wo_outlies = bidim_sentence_embeddings[predictions!=0, :]
+        predictions_wo_outliers = predictions[predictions != 0]
+        colors_wo_outliers = colors[predictions != 0]
+        bidim_sentence_embeddings_wo_outlies = bidim_sentence_embeddings[predictions != 0, :]
         plt.scatter(x=bidim_sentence_embeddings_wo_outlies[:, 0], y=bidim_sentence_embeddings_wo_outlies[:, 1],
                     alpha=0.5, c=colors_wo_outliers[predictions_wo_outliers], s=1)
         plt.savefig("clustering_wo_outliers.png", bbox_inches='tight')
