@@ -59,12 +59,12 @@ class ClusteringPipeline:
         self.hdbscan_model = None
         self.umap_params = {'metric': 'cosine',
                             'n_components': self.n_components,
-                            'min_dist': 0.1,
-                            'n_neighbors': 10}
-        self.hdbscan_params = {'min_samples': 5,
-                               'min_cluster_size': 10,
+                            'min_dist': 0.5,
+                            'n_neighbors': 15}
+        self.hdbscan_params = {'min_samples': 2,
+                               'min_cluster_size': 4,
                                'metric': 'euclidean',
-                               'cluster_selection_method': 'eom'}
+                               'cluster_selection_method': 'leaf'}
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
         self.path_training_sentences = path_training_sentences
@@ -143,8 +143,8 @@ class ClusteringPipeline:
                 self.umap_params[k] = v
 
     def _prepare_evaluation(self):
-        self.param_dist = {'min_samples': [1, 5, 10, 25, 50],
-                           'min_cluster_size': [5, 10, 25, 50],
+        self.param_dist = {'min_samples': [1, 2, 5, 10, 25, 50],
+                           'min_cluster_size': [2, 5, 10, 25, 50],
                            'cluster_selection_method': ['eom', 'leaf'],
                            'metric': ['euclidean'],
                            'prediction_data': [True],
@@ -192,6 +192,10 @@ class ClusteringPipeline:
               f"\t(davies_bouldin_score): {davies_bouldin_score(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\n\n"
+              
+              # f"Number of clusters: {len(set(self.hdbscan_model.labels_))}\n"
+              # f"Number of outliers: {sum(self.hdbscan_model.labels_)}"
+              f"\n\n"
 
               f"Evaluation on test data: TODO"
               # f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.test_embeddings, test_labels)}"
@@ -208,10 +212,8 @@ class ClusteringPipeline:
         # N.b.: the HDBSCAN algorithm is applied to the sentence embedding in a N-dimensional space.
         # then, the cluster information is used to plot the datapoints in a 2-dimensional space.
         # thus, be aware that the data for HDBSCAN and the data used for visualization lie in two different spaces!
-        umap_params = {'metric': 'cosine',
-                       'n_components': 2,
-                       'min_dist': 0.1,
-                       'n_neighbors': 10}
+        umap_params = self.umap_params
+        umap_params['n_components'] = 2
         bi_dim_umap_model = umap.UMAP(**umap_params)
         bidim_sentence_embeddings = bi_dim_umap_model.fit_transform(sentences)
         sentence_embeddings_for_clustering = self.umap_model.transform(sentences)
@@ -226,7 +228,7 @@ class ClusteringPipeline:
         plt.savefig("clustering.png", bbox_inches='tight')
         plt.show()
         predictions_wo_outliers = predictions[predictions != 0]
-        colors_wo_outliers = colors[predictions != 0]
+        colors_wo_outliers = colors[predictions_wo_outliers]
         bidim_sentence_embeddings_wo_outlies = bidim_sentence_embeddings[predictions != 0, :]
         plt.scatter(x=bidim_sentence_embeddings_wo_outlies[:, 0], y=bidim_sentence_embeddings_wo_outlies[:, 1],
                     alpha=0.5, c=colors_wo_outliers[predictions_wo_outliers], s=1)
