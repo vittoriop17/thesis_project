@@ -48,7 +48,7 @@ def get_sentences(path):
 class ClusteringPipeline:
     def __init__(self, bi_encoder_path, training_sentences: list = None,
                  metric=Literal['precomputed', 'cosine', 'euclidean'],
-                 path_training_sentences=None, check_hopkins_test=False,
+                 train_sentences_path=None, check_hopkins_test=False,
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
                  hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean', hdbscan_cluster_method='eom',
                  **kwargs):
@@ -69,7 +69,7 @@ class ClusteringPipeline:
                                'cluster_selection_method': hdbscan_cluster_method}
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
-        self.path_training_sentences = path_training_sentences
+        self.path_training_sentences = train_sentences_path
 
         # Check variables
         self._sanity_check()
