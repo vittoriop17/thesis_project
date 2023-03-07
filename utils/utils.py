@@ -111,7 +111,8 @@ def binarize_scores(df):
 
 
 def upload_args(file_path=None):
-    parser = argparse.ArgumentParser(description=f'Sentence-BERT fine-tuning parameters')
+    parser = argparse.ArgumentParser(description=f'Arguments for sbert fine-tuning or clustering',
+                                     argument_default=argparse.SUPPRESS)
     parser.add_argument("--name", required=False, type=str, help="Name of the experiment")
     # ----- SBERT FINE-TUNING PARAMETERS
     parser.add_argument("--num_epochs", required=False, type=int,
