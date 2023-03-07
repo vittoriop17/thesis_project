@@ -179,19 +179,19 @@ def upload_args(file_path=None):
                         help="Boolean flag. If specified, apply HDBSCAN model validation with DBCV metric")
     parser.add_argument("--n_components", default=5, type=int,
                         help="number of components for UMAP dimensionality reduction")
-    parser.add_argument("--umap_min_dist", default=0.1, type=float,
+    parser.add_argument("--umap_min_dist", type=float,
                         help="Min_dist parameter for umap")
-    parser.add_argument("--umap_n_neighbors", default=15, type=int,
+    parser.add_argument("--umap_n_neighbors", type=int,
                         help="number of neighbors for UMAP dimensionality reduction")
     parser.add_argument("--umap_metric", default='cosine', type=str,
                         help="Distance metric used for UMAP dimensionality reduction")
-    parser.add_argument("--hdbscan_min_samples", default=5, type=int,
+    parser.add_argument("--hdbscan_min_samples", type=int,
                         help="min_samples argument for HDBSCAN")
-    parser.add_argument("--hdbscan_min_cluster_size", default=5, type=int,
+    parser.add_argument("--hdbscan_min_cluster_size", type=int,
                         help="min_cluster_size argument for HDBSCAN")
-    parser.add_argument("--hdbscan_metric", default='euclidean', type=str,
+    parser.add_argument("--hdbscan_metric", type=str,
                         help="Distance metric for HDBSCAN")
-    parser.add_argument("--hdbscan_cluster_method", default='eom', type=str,
+    parser.add_argument("--hdbscan_cluster_method", type=str,
                         help="Cluster method selection for HDBSCAN")
     parser.add_argument("--hdbscan_epsilon", type=float,
                         help="Cluster method epsilon for HDBSCAN")

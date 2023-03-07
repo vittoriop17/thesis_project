@@ -113,9 +113,9 @@ class ClusteringPipeline:
 
     def _validate_umap(self, sentence_embeddings):
         print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
-        min_dists = (0.1, 0.9)
-        n_components = [2, 5]
-        metrics = ['cosine', 'euclidean']
+        min_dists = (0.1, 0.5, 0.9)
+        n_components = [5, 10, 15]
+        metrics = ['cosine']
         params_and_trust_values = list()
         for min_dist in min_dists:
             for n_c in n_components:
