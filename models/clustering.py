@@ -21,16 +21,17 @@ SEED = 42
 
 def validity_index_score(estimator, X_test):
     X_train = estimator.prediction_data_.raw_data
-    try:
-        print(f"X.shape: {X_test.shape}, estimator: {estimator}")
-        print(f"X_train.shape: {X_train.shape}")
-    except:
-        pass
+    # try:
+    #     print(f"X.shape: {X_test.shape}, estimator: {estimator}")
+    #     print(f"X_train.shape: {X_train.shape}")
+    # except:
+    #     pass
     # y_pred = estimator.fit_predict(X_test)
     # extract the labels predicted for the training set
     y_pred_training = estimator.labels_
     try:
-        print(f"N clusters: {len(set(y_pred_training))}. N.outliers: {sum(y_pred_training == -1)}")
+        print(f"\n\nEstimator: {estimator}"
+              f"\nN.clusters: {len(set(y_pred_training))}. N.outliers: {sum(y_pred_training == -1)}")
     except:
         pass
     return hdbscan.validity.validity_index(X_train, y_pred_training)
@@ -172,12 +173,14 @@ class ClusteringPipeline:
                                            scoring=validity_index_score,
                                            random_state=SEED)
         random_search.fit(X)
+        best_params = random_search.best_params_
+        best_params.pop('memory', None)
         print(f"\nDBCV score :{random_search.best_estimator_.relative_validity_}")
-        print(f"\nBest Parameters {random_search.best_params_}")
+        print(f"\nBest Parameters {best_params}")
         print(f"\nOverriding existing params with best params:"
               f"\n\nExisting params: \n\t{json.dumps(self.hdbscan_params, indent=4)}"
-              f"\n\nNew params (best params after random grid search): \n\t{json.dumps(random_search.best_params_)}")
-        self.hdbscan_params = random_search.best_params_
+              f"\n\nNew params (best params after random grid search): \n\t{json.dump(best_params, indent=4)}")
+        self.hdbscan_params = best_params
         self.hdbscan_model = random_search.best_estimator_
 
     def train_over_all_sentences(self):
