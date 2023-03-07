@@ -29,6 +29,8 @@ def validity_index_score(estimator, X_test):
     #     pass
     # y_pred = estimator.fit_predict(X_test)
     # extract the labels predicted for the training set
+    # if estimator.metric == 'precomputed':
+    #     estimator.fit(X_train)
     y_pred_training = estimator.labels_
     try:
         print(f"\n\nEstimator (metric={estimator.metric}:"
@@ -149,6 +151,7 @@ class ClusteringPipeline:
                            'metric': [metric],
                            'cluster_selection_epsilon': [0.05, 0.1, 0.2, 0.5],
                            'prediction_data': [True],
+                           'gen_min_span_tree': [True],
                            'memory': [Memory(LOCATION, verbose=0)]
                            }
         self.cosine_similarity_matrix = cosine_similarity(self.training_embeddings)
@@ -182,25 +185,25 @@ class ClusteringPipeline:
         self._prepare_evaluation(metric)
         X = self.training_embeddings if metric == 'euclidean' else self.cosine_similarity_matrix
         n_iter_search = 20
-        hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True).fit(X)
+        hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True, prediction_data=True, metric=metric)
         random_search = RandomizedSearchCV(hdbscan_model,
                                            param_distributions=self.param_dist,
                                            n_iter=n_iter_search,
                                            scoring=validity_index_score,
                                            random_state=SEED,
                                            error_score='raise',
-                                           cv=[(slice(None), slice(None))])
+                                           cv=[(slice(None), slice(None))])  # N.B.: no CV is applied!!!
         random_search.fit(X)
         best_params = random_search.best_params_
         best_params.pop('memory', None)
-        print(f"\nDBCV score :{random_search.best_estimator_.relative_validity_}")
+        print(f"\nDBCV score :{random_search.best_score_}")
         print(f"\nBest Parameters {best_params}")
         print(f"\nOverriding existing params with best params:"
               f"\n\nExisting params: \n\t{json.dumps(self.hdbscan_params, indent=4)}"
               f"\n\nNew params (best params after random grid search): \n\t{json.dumps(best_params, indent=4)}")
         self.hdbscan_params = best_params
         self.hdbscan_model = random_search.best_estimator_
-        return random_search.best_estimator_.relative_validity_
+        return random_search.best_score_
 
     def train_over_all_sentences(self):
         X = cosine_similarity(self.training_embeddings) if self.hdbscan_params['metric'] == 'precomputed' \
