@@ -47,14 +47,12 @@ def get_sentences(path):
 
 class ClusteringPipeline:
     def __init__(self, bi_encoder_path, training_sentences: list = None,
-                 metric=Literal['precomputed', 'cosine', 'euclidean'],
                  train_sentences_path=None, check_hopkins_test=False,
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
                  hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean', hdbscan_cluster_method='eom',
-                 **kwargs):
+                 hdbscan_epsilon=0.2, **kwargs):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
-        self.metric = metric
         self.n_components = n_components
         self.check_hopkins_test = check_hopkins_test
         self.validate_umap = validate_umap
@@ -66,7 +64,8 @@ class ClusteringPipeline:
         self.hdbscan_params = {'min_samples': hdbscan_min_samples,
                                'min_cluster_size': hdbscan_min_cluster_size,
                                'metric': hdbscan_metric,
-                               'cluster_selection_method': hdbscan_cluster_method}
+                               'cluster_selection_method': hdbscan_cluster_method,
+                               'cluster_selection_epsilon': hdbscan_epsilon}
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
         self.path_training_sentences = train_sentences_path
@@ -85,13 +84,10 @@ class ClusteringPipeline:
             # self.training_sentences = self.training_sentences[:100]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
-        self.training_embeddings, self.training_similarity_matrix = self._get_embeddings(self.training_sentences)
+        self.training_embeddings = self._get_embeddings(self.training_sentences)
         self.training_embeddings = self.training_embeddings.astype('double')
         # Check if embeddings are not uniformly distributed in the embedding space (hopkins test)
         self._check_hopkins()
-
-        # Prepare HDBSCAN model
-        self._prepare_evaluation()
 
     def _sanity_check(self):
         assert os.path.exists(
@@ -108,13 +104,12 @@ class ClusteringPipeline:
     def _get_embeddings(self, sentences):
         sentence_embeddings = self.sbert_model.encode(sentences)
         self.original_sentence_embeddings = sentence_embeddings
-        cosine_similarity_matrix = cosine_similarity(sentence_embeddings) if self.metric == 'precomputed' else None
         if self.validate_umap:
             self._validate_umap(sentence_embeddings)
         umap_model = umap.UMAP(**self.umap_params)
         umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
         self.umap_model = umap_model
-        return umap_sentence_embeddings, cosine_similarity_matrix
+        return umap_sentence_embeddings
 
     def _validate_umap(self, sentence_embeddings):
         print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
@@ -144,14 +139,16 @@ class ClusteringPipeline:
             if k != 'trustworthiness':
                 self.umap_params[k] = v
 
-    def _prepare_evaluation(self):
+    def _prepare_evaluation(self, metric=Literal['euclidean', 'precomputed']):
         self.param_dist = {'min_samples': [1, 2, 5, 10, 25, 50],
-                           'min_cluster_size': [2, 5, 10, 25, 50],
+                           'min_cluster_size': [5, 10, 25, 50],
                            'cluster_selection_method': ['eom', 'leaf'],
-                           'metric': ['euclidean'],
+                           'metric': [metric],
+                           'cluster_selection_epsilon': [0.05, 0.1, 0.2, 0.5],
                            'prediction_data': [True],
                            'memory': [Memory(LOCATION, verbose=0)]
                            }
+        self.cosine_similarity_matrix = cosine_similarity(self.training_embeddings)
 
     def _check_hopkins(self):
         if self.check_hopkins_test:
@@ -161,25 +158,22 @@ class ClusteringPipeline:
             # X = scale(self.training_embeddings)
             # hopkins(X, 150)
 
-    def evaluate(self, evaluation_type):
-        assert evaluation_type in ['dbcv', 'cvps'], f"Invalid argument for evaluation_type. Expected dbcv or cvps." \
-                                                    f"Found: {evaluation_type}"
-        if evaluation_type == 'dbcv':
-            print(f"Starting evaluation with DBCV strategy")
-            n_iter_search = 10
-            hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True).fit(self.training_embeddings)
-            random_search = RandomizedSearchCV(hdbscan_model,
-                                               param_distributions=self.param_dist,
-                                               n_iter=n_iter_search,
-                                               scoring=validity_index_score,
-                                               random_state=SEED)
-            random_search.fit(self.training_embeddings)
-            print(f"\nBest Parameters {random_search.best_params_}")
-            print(f"\nDBCV score :{random_search.best_estimator_.relative_validity_}")
-            print(f"Saving best model")
-            self.hdbscan_model = random_search.best_estimator_
-        else:
-            raise NotImplementedError("CVPS validation technique not implemented yet")
+    def evaluate(self, metric=Literal['euclidean', 'precomputed']):
+        print(f"Starting evaluation with DBCV strategy. Using {str(metric).upper()} as distance metric")
+        self._prepare_evaluation(metric)
+        X = self.training_embeddings if metric == 'euclidean' else self.cosine_similarity_matrix
+        n_iter_search = 20
+        hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True).fit(X)
+        random_search = RandomizedSearchCV(hdbscan_model,
+                                           param_distributions=self.param_dist,
+                                           n_iter=n_iter_search,
+                                           scoring=validity_index_score,
+                                           random_state=SEED)
+        random_search.fit(X)
+        print(f"\nBest Parameters {random_search.best_params_}")
+        print(f"\nDBCV score :{random_search.best_estimator_.relative_validity_}")
+        print(f"Saving best model")
+        self.hdbscan_model = random_search.best_estimator_
 
     def train_over_all_sentences(self):
         if self.hdbscan_model is None:

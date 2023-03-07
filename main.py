@@ -25,7 +25,6 @@ def main(args):
         fine_tuner.evaluate_sbert(load_finetuned=True)
 
 
-
 if __name__=='__main__':
     args = upload_args()
     main(args)
