@@ -176,9 +176,11 @@ class ClusteringPipeline:
         self.hdbscan_model = random_search.best_estimator_
 
     def train_over_all_sentences(self):
+        X = cosine_similarity(self.training_embeddings) if self.hdbscan_params['metric'] == 'precomputed' \
+            else self.training_embeddings
         if self.hdbscan_model is None:
             self.hdbscan_model = hdbscan.HDBSCAN(prediction_data=True, gen_min_span_tree=True, **self.hdbscan_params)
-        self.hdbscan_model.fit(self.training_embeddings)
+        self.hdbscan_model.fit(X)
         # test_labels, _ = hdbscan.approximate_predict(self.hdbscan_model, self.test_sentences)
         # Drawbacks
         # The Calinski-Harabasz AND davies_bouldin_score index is generally higher for convex clusters than other concepts of clusters,
