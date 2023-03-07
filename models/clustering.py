@@ -20,7 +20,8 @@ SEED = 42
 
 
 def validity_index_score(estimator, X_test):
-    X_train = estimator.prediction_data_.raw_data
+    # work-around
+    X_train = estimator.prediction_data_.raw_data if estimator.metric != 'precomputed' else X_test
     # try:
     #     print(f"X.shape: {X_test.shape}, estimator: {estimator}")
     #     print(f"X_train.shape: {X_train.shape}")
@@ -186,7 +187,9 @@ class ClusteringPipeline:
                                            param_distributions=self.param_dist,
                                            n_iter=n_iter_search,
                                            scoring=validity_index_score,
-                                           random_state=SEED)
+                                           random_state=SEED,
+                                           error_score='raise',
+                                           cv=[(slice(None), slice(None))])
         random_search.fit(X)
         best_params = random_search.best_params_
         best_params.pop('memory', None)
