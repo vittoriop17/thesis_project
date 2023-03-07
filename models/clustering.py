@@ -30,11 +30,12 @@ def validity_index_score(estimator, X_test):
     # extract the labels predicted for the training set
     y_pred_training = estimator.labels_
     try:
-        print(f"\n\nEstimator: {estimator}"
+        print(f"\n\nEstimator (metric={estimator.metric}:"
+              f"\n{estimator}"
               f"\nN.clusters: {len(set(y_pred_training))}. N.outliers: {sum(y_pred_training == -1)}")
     except:
         pass
-    return hdbscan.validity.validity_index(X_train, y_pred_training)
+    return hdbscan.validity.validity_index(X_train, y_pred_training, metric=estimator.metric)
 
 
 def get_sentences(path):
@@ -164,9 +165,14 @@ class ClusteringPipeline:
         best_params_euclidean = self.hdbscan_params
         best_hdbscan_model = self.hdbscan_model
         score_precomputed = self._evaluate_metric("precomputed")
+        best_metric = 'precomputed'
         if score_euclidean > score_precomputed:
             self.hdbscan_params = best_params_euclidean
             self.hdbscan_model = best_hdbscan_model
+            best_metric = 'euclidean'
+        print(f"Best metric: {best_metric}")
+        print(f"Final set of parameters: "
+              f"\n\t{json.dumps(self.hdbscan_params, indent=4)}")
 
     def _evaluate_metric(self, metric):
         metric = str.lower(metric)
