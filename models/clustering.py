@@ -170,9 +170,12 @@ class ClusteringPipeline:
                                            scoring=validity_index_score,
                                            random_state=SEED)
         random_search.fit(X)
-        print(f"\nBest Parameters {random_search.best_params_}")
         print(f"\nDBCV score :{random_search.best_estimator_.relative_validity_}")
-        print(f"Saving best model")
+        print(f"\nBest Parameters {random_search.best_params_}")
+        print(f"\nOverriding existing params with best params:"
+              f"\n\nExisting params: \n\t{json.dumps(self.hdbscan_params, indent=4)}"
+              f"\n\nNew params (best params after random grid search): \n\t{json.dumps(random_search.best_params_)}")
+        self.hdbscan_params = random_search.best_params_
         self.hdbscan_model = random_search.best_estimator_
 
     def train_over_all_sentences(self):
