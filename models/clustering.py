@@ -139,7 +139,7 @@ class ClusteringPipeline:
             if k != 'trustworthiness':
                 self.umap_params[k] = v
 
-    def _prepare_evaluation(self, metric=Literal['euclidean', 'precomputed']):
+    def _prepare_evaluation(self, metric):
         self.param_dist = {'min_samples': [1, 2, 5, 10, 25, 50],
                            'min_cluster_size': [5, 10, 25, 50],
                            'cluster_selection_method': ['eom', 'leaf'],
@@ -158,7 +158,9 @@ class ClusteringPipeline:
             # X = scale(self.training_embeddings)
             # hopkins(X, 150)
 
-    def evaluate(self, metric=Literal['euclidean', 'precomputed']):
+    def evaluate(self, metric):
+        metric = str.lower(metric)
+        assert metric in ['euclidean', 'precomputed'], f"Invalid metric! Must be euclidean or precomputed"
         print(f"Starting evaluation with DBCV strategy. Using {str(metric).upper()} as distance metric")
         self._prepare_evaluation(metric)
         X = self.training_embeddings if metric == 'euclidean' else self.cosine_similarity_matrix
