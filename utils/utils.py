@@ -197,7 +197,7 @@ def upload_args(file_path=None):
     parser.add_argument("--hdbscan_epsilon", type=float,
                         help="Cluster method epsilon for HDBSCAN")
     args = parser.parse_args()
-    file_path = getattr(args, 'config_file_path') if getattr(args, 'config_file_path') is not None else file_path
+    file_path = getattr(args, 'config_file_path') if hasattr(args, 'config_file_path') is not None else file_path
     args = upload_args_from_json(args, file_path) if file_path is not None else args
     print(args)
     return args
