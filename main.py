@@ -11,7 +11,6 @@ def main(args):
         clustering_pipe = clustering.ClusteringPipeline(**vars(args))
         if args.validate_hdbscan:
             clustering_pipe.evaluate()
-            clustering_pipe.evaluate("precomputed")
         clustering_pipe.train_over_all_sentences()
         clustering_pipe.plot_clusters(clustering_pipe.original_sentence_embeddings)
     else:
