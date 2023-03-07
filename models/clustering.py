@@ -159,7 +159,16 @@ class ClusteringPipeline:
             # X = scale(self.training_embeddings)
             # hopkins(X, 150)
 
-    def evaluate(self, metric):
+    def evaluate(self):
+        score_euclidean = self._evaluate_metric("euclidean")
+        best_params_euclidean = self.hdbscan_params
+        best_hdbscan_model = self.hdbscan_model
+        score_precomputed = self._evaluate_metric("precomputed")
+        if score_euclidean > score_precomputed:
+            self.hdbscan_params = best_params_euclidean
+            self.hdbscan_model = best_hdbscan_model
+
+    def _evaluate_metric(self, metric):
         metric = str.lower(metric)
         assert metric in ['euclidean', 'precomputed'], f"Invalid metric! Must be euclidean or precomputed"
         print(f"Starting evaluation with DBCV strategy. Using {str(metric).upper()} as distance metric")
@@ -179,9 +188,10 @@ class ClusteringPipeline:
         print(f"\nBest Parameters {best_params}")
         print(f"\nOverriding existing params with best params:"
               f"\n\nExisting params: \n\t{json.dumps(self.hdbscan_params, indent=4)}"
-              f"\n\nNew params (best params after random grid search): \n\t{json.dump(best_params, indent=4)}")
+              f"\n\nNew params (best params after random grid search): \n\t{json.dumps(best_params, indent=4)}")
         self.hdbscan_params = best_params
         self.hdbscan_model = random_search.best_estimator_
+        return random_search.best_estimator_.relative_validity_
 
     def train_over_all_sentences(self):
         X = cosine_similarity(self.training_embeddings) if self.hdbscan_params['metric'] == 'precomputed' \
