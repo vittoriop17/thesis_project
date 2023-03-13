@@ -86,7 +86,7 @@ class ClusteringPipeline:
         if training_sentences is None:
             print(f"Loading training sentences from {self.path_training_sentences}")
             self.training_sentences = get_sentences(self.path_training_sentences)
-            # self.training_sentences = self.training_sentences[:100]
+            self.training_sentences = self.training_sentences[:100]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings = self._get_embeddings(self.training_sentences)
@@ -193,15 +193,20 @@ class ClusteringPipeline:
             # params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
             hdbscan_model = hdbscan.HDBSCAN(**params)
             hdbscan_model.fit(X)
+            mid = hash(frozenset(params.items()))
             print(f"\nExperiment with params: {json.dumps(params, indent=2)}"
                   f"\nModel: {hdbscan_model}\n")
-            score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric)
+            score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric, d=self.umap_params['n_components'])
             print(f"\033[94mScore {score}"
                   f"\nN.Clusters: {len(set(hdbscan_model.labels_))}"
                   f"\nOutliers: {sum(hdbscan_model.labels_==-1)}\n\33[30m")
             if score > best_validitiy_score:
                 best_validitiy_score = score
                 best_params = params
+            params['n_clusters'] = len(set(hdbscan_model.labels_))
+            params['outliers'] = sum(hdbscan_model.labels_==-1)
+            params['score'] = score
+            self.save_partial_results_hdbscan(params, mid)
             del hdbscan_model
         best_params.pop('memory', None)
         print(f"\nDBCV score :{best_validitiy_score}")
@@ -242,6 +247,9 @@ class ClusteringPipeline:
               f"Note: \n"
               f"\tcalinski_harabasz_score: the larger the better.\n"
               f"\tdavies_bouldin_score: the lower the better.")
+
+    def save_partial_results_hdbscan(self, hdbscan_params_and_results, mid):
+        json.dump(hdbscan_params_and_results, open(f"results\\hdbscan_{mid}"))
 
     def plot_clusters(self, sentences):
         # TODO - save data
