@@ -14,6 +14,7 @@ from langdetect import detect
 from bertopic import BERTopic
 from silver_set_construction import *
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 
 SPECIAL_SPACY_ENTITIES = ['ORDINAL', 'CARDINAL', 'MONEY', 'PERCENT', 'QUANTITY', 'TIME', 'DATE']
@@ -195,9 +196,7 @@ def save_sentences(sentences, filepath):
         [fout.write(f"{sentence}\n") for sentence in sentences]
 
 
-if __name__=='__main__':
-    # df = get_dataframe_from_gzip("..\\data\\Software_5.json.gz")
-    # sentences_wo_punct = get_sentences(df)
+def extract_and_save_silver_sets():
     en_dataset_path = "DISNEY\\en_reviews_disney.csv"
     path_spacy_data = "DISNEY\\all_docs.spacy"
     df, _, _ = get_dataframes(en_dataset_path, (1, 0, 0))
@@ -247,6 +246,41 @@ if __name__=='__main__':
     save_sentences(df_train.spacy_sentences, filepath.format("train"))
     save_sentences(df_dev.spacy_sentences, filepath.format("dev"))
     save_sentences(df_test.spacy_sentences, filepath.format("test"))
+
+
+if __name__=='__main__':
+    # df = get_dataframe_from_gzip("..\\data\\Software_5.json.gz")
+    # sentences_wo_punct = get_sentences(df)
+    en_dataset_path = "DISNEY\\en_reviews_disney.csv"
+    path_spacy_data = "DISNEY\\all_docs.spacy"
+    df, _, _ = get_dataframes(en_dataset_path, (1, 0, 0))
+    nlp, df = extract_sentences_spacy(df, path_spacy_data)
+
+    # remove duplicates
+    print(f"Number of sentences (before removing duplicates): {len(df)}")
+    df = df.drop_duplicates(subset='spacy_sentences')
+    print(f"Number of unique sentences: {len(df)}")
+
+    # FILTER SHORT AND LONG SENTENCES
+    extract_words(df)
+    n = df.shape[0]
+    df = df[df.len_sentence > MIN_SENT_LEN]
+    print(f"Number of sentences before filtering short sentences: {n}\tafter filtering: {df.shape[0]}")
+    n = df.shape[0]
+    df = df[df.len_sentence < MAX_SEN_LEN]
+    print(f"Number of sentences before filtering long sentences: {n}\tafter filtering: {df.shape[0]}")
+
+    df.date = pd.to_datetime(df.date)
+    df_groupby_year = df.groupby([df.date.dt.year]).agg('count')
+    last_year = max(df.date.dt.year)
+    df_last_two_years = df[df.date.dt.year>(last_year - 2)]
+    df_last_two_years_groupby_month = df_last_two_years.groupby(
+        [df_last_two_years.date.dt.year, df_last_two_years.date.dt.month]).agg('count')
+    plt.bar(x=np.arange(len(df_last_two_years_groupby_month.date)), height=df_last_two_years_groupby_month.date)
+    labels = list(map(lambda x: str(x[0])+"-"+str(x[1]), df_last_two_years_groupby_month.index))
+    plt.xticks(rotation=45, ticks=np.arange(len(df_last_two_years_groupby_month.date)), labels=labels)
+    plt.title("Number of SENTENCES per month")
+    plt.show()
     # extract_bert_topics(df_train, nlp)
     # start_time = time.time()
     # sentences_wo_punct = extract_sentences_spacy(df_test)

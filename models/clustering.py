@@ -1,7 +1,7 @@
 import json
 import os
 import torch
-from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import RandomizedSearchCV, ParameterSampler
 import hdbscan
 from sklearn.metrics import make_scorer
 import umap
@@ -14,6 +14,7 @@ from joblib import Memory
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score
+from tqdm import tqdm
 
 LOCATION = '/tmp/joblib'
 SEED = 42
@@ -29,8 +30,6 @@ def validity_index_score(estimator, X_test):
     #     pass
     # y_pred = estimator.fit_predict(X_test)
     # extract the labels predicted for the training set
-    # if estimator.metric == 'precomputed':
-    #     estimator.fit(X_train)
     y_pred_training = estimator.labels_
     try:
         print(f"\n\nEstimator (metric={estimator.metric}:"
@@ -152,7 +151,7 @@ class ClusteringPipeline:
                            'cluster_selection_epsilon': [0.05, 0.1, 0.2, 0.5],
                            'prediction_data': [True],
                            'gen_min_span_tree': [True],
-                           'memory': [Memory(LOCATION, verbose=0)]
+                           # 'memory': [Memory(LOCATION, verbose=0)]
                            }
         self.cosine_similarity_matrix = cosine_similarity(self.training_embeddings)
 
@@ -181,29 +180,42 @@ class ClusteringPipeline:
     def _evaluate_metric(self, metric):
         metric = str.lower(metric)
         assert metric in ['euclidean', 'precomputed'], f"Invalid metric! Must be euclidean or precomputed"
-        print(f"Starting evaluation with DBCV strategy. Using {str(metric).upper()} as distance metric")
+        print(f"Starting evaluation with DBCV strategy. Using {str(metric).upper()} as distance metric\n")
         self._prepare_evaluation(metric)
         X = self.training_embeddings if metric == 'euclidean' else self.cosine_similarity_matrix
-        n_iter_search = 20
-        hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True, prediction_data=True, metric=metric)
-        random_search = RandomizedSearchCV(hdbscan_model,
-                                           param_distributions=self.param_dist,
-                                           n_iter=n_iter_search,
-                                           scoring=validity_index_score,
-                                           random_state=SEED,
-                                           error_score='raise',
-                                           cv=[(slice(None), slice(None))])  # N.B.: no CV is applied!!!
-        random_search.fit(X)
-        best_params = random_search.best_params_
+        n_iter_search = 40
+        # hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True, prediction_data=True, metric=metric)
+        best_validitiy_score = - np.inf
+        best_params = {}
+        best_model = None
+        param_list = list(ParameterSampler(param_distributions=self.param_dist, n_iter=n_iter_search, random_state=42))
+        for params in tqdm(param_list, f"Experiment with parameters: {json.dumps(params, indent=4)}"):
+            params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
+            hdbscan_model = hdbscan.HDBSCAN(**params)
+            hdbscan_model.fit(X)
+            score = validity_index_score(hdbscan_model, X)
+            if score > best_validitiy_score:
+                best_validitiy_score = score
+                best_params = params
+                best_model = hdbscan_model
+        # random_search = RandomizedSearchCV(hdbscan_model,
+        #                                    param_distributions=self.param_dist,
+        #                                    n_iter=n_iter_search,
+        #                                    scoring=validity_index_score,
+        #                                    random_state=SEED,
+        #                                    error_score='raise',
+        #                                    cv=[(slice(None), slice(None))])  # N.B.: no CV is applied!!!
+        # random_search.fit(X)
+        # best_params = random_search.best_params_
         best_params.pop('memory', None)
-        print(f"\nDBCV score :{random_search.best_score_}")
+        print(f"\nDBCV score :{best_validitiy_score}")
         print(f"\nBest Parameters {best_params}")
         print(f"\nOverriding existing params with best params:"
               f"\n\nExisting params: \n\t{json.dumps(self.hdbscan_params, indent=4)}"
               f"\n\nNew params (best params after random grid search): \n\t{json.dumps(best_params, indent=4)}")
         self.hdbscan_params = best_params
-        self.hdbscan_model = random_search.best_estimator_
-        return random_search.best_score_
+        self.hdbscan_model = best_model
+        return best_validitiy_score
 
     def train_over_all_sentences(self):
         X = cosine_similarity(self.training_embeddings) if self.hdbscan_params['metric'] == 'precomputed' \
