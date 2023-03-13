@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score
 from tqdm import tqdm
+import joblib
 
 LOCATION = '/tmp/joblib'
 SEED = 42
@@ -189,7 +190,8 @@ class ClusteringPipeline:
         best_params = {}
         best_model = None
         param_list = list(ParameterSampler(param_distributions=self.param_dist, n_iter=n_iter_search, random_state=42))
-        for params in tqdm(param_list, f"Experiment with parameters: {json.dumps(params, indent=4)}"):
+        idx = 0
+        for params in tqdm(param_list, f"Experiment with parameters: {json.dumps(param_list[idx], indent=4)}"):
             params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
             hdbscan_model = hdbscan.HDBSCAN(**params)
             hdbscan_model.fit(X)
@@ -198,6 +200,7 @@ class ClusteringPipeline:
                 best_validitiy_score = score
                 best_params = params
                 best_model = hdbscan_model
+            idx += 1
         # random_search = RandomizedSearchCV(hdbscan_model,
         #                                    param_distributions=self.param_dist,
         #                                    n_iter=n_iter_search,
@@ -275,5 +278,8 @@ class ClusteringPipeline:
         plt.savefig("clustering_wo_outliers.png", bbox_inches='tight')
         plt.show()
 
+    def save_hdbscan_model(self):
+        filename = 'hdbscan_model.joblib'
+        joblib.dump(self.hdbscan_model, filename)
 
 

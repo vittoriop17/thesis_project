@@ -13,6 +13,7 @@ def main(args):
             clustering_pipe.evaluate()
         clustering_pipe.train_over_all_sentences()
         clustering_pipe.plot_clusters(clustering_pipe.original_sentence_embeddings)
+        clustering_pipe.save_hdbscan_model()
     else:
         fine_tuner = sbert_fine_tuning.SbertFineTuning(**vars(args))
         fine_tuner.read_silver_set()
