@@ -206,7 +206,7 @@ class ClusteringPipeline:
             params['n_clusters'] = len(set(hdbscan_model.labels_))
             params['outliers'] = sum(hdbscan_model.labels_==-1)
             params['score'] = score
-            self.save_partial_results_hdbscan(params, mid)
+            # self.save_partial_results_hdbscan(params, mid)
             del hdbscan_model
         best_params.pop('memory', None)
         print(f"\nDBCV score :{best_validitiy_score}")
