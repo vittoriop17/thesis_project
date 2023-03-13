@@ -86,7 +86,7 @@ class ClusteringPipeline:
         if training_sentences is None:
             print(f"Loading training sentences from {self.path_training_sentences}")
             self.training_sentences = get_sentences(self.path_training_sentences)
-            # self.training_sentences = self.training_sentences[:100]
+            self.training_sentences = self.training_sentences[:100]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings = self._get_embeddings(self.training_sentences)
@@ -188,21 +188,21 @@ class ClusteringPipeline:
         # hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True, prediction_data=True, metric=metric)
         best_validitiy_score = - np.inf
         best_params = {}
-        best_model = None
         param_list = list(ParameterSampler(param_distributions=self.param_dist, n_iter=n_iter_search, random_state=42))
-        idx = 0
-        for params in tqdm(param_list, f"\n\nExperiment with parameters: {json.dumps(param_list[idx], indent=4)}"):
+        for params in tqdm(param_list):
             # params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
             hdbscan_model = hdbscan.HDBSCAN(**params)
             hdbscan_model.fit(X)
-            print(f"Model: {hdbscan_model}")
+            print(f"\nExperiment with params: {json.dumps(params, indent=2)}"
+                  f"\nModel: {hdbscan_model}\n")
             score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric)
-            print(f"\033[94mScore {score}\n\n\33[30m")
+            print(f"\033[94mScore {score}"
+                  f"\nN.Clusters: {len(set(hdbscan_model.labels_))}"
+                  f"\nOutliers: {sum(hdbscan_model.labels_==-1)}\n\33[30m")
             if score > best_validitiy_score:
                 best_validitiy_score = score
                 best_params = params
-                best_model = hdbscan_model
-            idx += 1
+            del hdbscan_model
         best_params.pop('memory', None)
         print(f"\nDBCV score :{best_validitiy_score}")
         print(f"\nBest Parameters {best_params}")
@@ -210,7 +210,7 @@ class ClusteringPipeline:
               f"\n\nExisting params: \n\t{json.dumps(self.hdbscan_params, indent=4)}"
               f"\n\nNew params (best params after random grid search): \n\t{json.dumps(best_params, indent=4)}")
         self.hdbscan_params = best_params
-        self.hdbscan_model = best_model
+        self.hdbscan_model = None
         return best_validitiy_score
 
     def train_over_all_sentences(self):
