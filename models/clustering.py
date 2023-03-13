@@ -149,7 +149,7 @@ class ClusteringPipeline:
                            'min_cluster_size': [5, 10, 25, 50],
                            'cluster_selection_method': ['eom', 'leaf'],
                            'metric': [metric],
-                           'cluster_selection_epsilon': [0.05, 0.1, 0.2, 0.5],
+                           'cluster_selection_epsilon': [0.05, 0.1, 0.2],
                            'prediction_data': [True],
                            'gen_min_span_tree': [True],
                            # 'memory': [Memory(LOCATION, verbose=0)]
@@ -195,8 +195,9 @@ class ClusteringPipeline:
             # params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
             hdbscan_model = hdbscan.HDBSCAN(**params)
             hdbscan_model.fit(X)
-            score = validity_index_score(hdbscan_model, X)
-            print(f"\033[94mScore {score}\n\n")
+            print(f"Model: {hdbscan_model}")
+            score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric)
+            print(f"\033[94mScore {score}\n\n\33[30m")
             if score > best_validitiy_score:
                 best_validitiy_score = score
                 best_params = params
