@@ -196,7 +196,7 @@ class ClusteringPipeline:
             hdbscan_model = hdbscan.HDBSCAN(**params)
             hdbscan_model.fit(X)
             score = validity_index_score(hdbscan_model, X)
-            print(f"\033[94mScore {score}")
+            print(f"\033[94mScore {score}\n\n")
             if score > best_validitiy_score:
                 best_validitiy_score = score
                 best_params = params
