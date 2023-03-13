@@ -191,25 +191,17 @@ class ClusteringPipeline:
         best_model = None
         param_list = list(ParameterSampler(param_distributions=self.param_dist, n_iter=n_iter_search, random_state=42))
         idx = 0
-        for params in tqdm(param_list, f"Experiment with parameters: {json.dumps(param_list[idx], indent=4)}"):
-            params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
+        for params in tqdm(param_list, f"\n\nExperiment with parameters: {json.dumps(param_list[idx], indent=4)}"):
+            # params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
             hdbscan_model = hdbscan.HDBSCAN(**params)
             hdbscan_model.fit(X)
             score = validity_index_score(hdbscan_model, X)
+            print(f"\033[94mScore {score}")
             if score > best_validitiy_score:
                 best_validitiy_score = score
                 best_params = params
                 best_model = hdbscan_model
             idx += 1
-        # random_search = RandomizedSearchCV(hdbscan_model,
-        #                                    param_distributions=self.param_dist,
-        #                                    n_iter=n_iter_search,
-        #                                    scoring=validity_index_score,
-        #                                    random_state=SEED,
-        #                                    error_score='raise',
-        #                                    cv=[(slice(None), slice(None))])  # N.B.: no CV is applied!!!
-        # random_search.fit(X)
-        # best_params = random_search.best_params_
         best_params.pop('memory', None)
         print(f"\nDBCV score :{best_validitiy_score}")
         print(f"\nBest Parameters {best_params}")
