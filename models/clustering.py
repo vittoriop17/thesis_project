@@ -86,7 +86,7 @@ class ClusteringPipeline:
         if training_sentences is None:
             print(f"Loading training sentences from {self.path_training_sentences}")
             self.training_sentences = get_sentences(self.path_training_sentences)
-            self.training_sentences = self.training_sentences[:100]
+            # self.training_sentences = self.training_sentences[:100]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings = self._get_embeddings(self.training_sentences)
