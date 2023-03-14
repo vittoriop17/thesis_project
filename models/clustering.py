@@ -264,7 +264,7 @@ class ClusteringPipeline:
               f"\tdavies_bouldin_score: the lower the better.")
 
     def save_partial_results_hdbscan(self, hdbscan_params_and_results, mid):
-        filepath = os.path.join(self.folder_results, mid)
+        filepath = os.path.join(self.folder_results, str(mid))
         json.dump(hdbscan_params_and_results, open(filepath, "w"))
 
     def plot_clusters(self, sentences):
