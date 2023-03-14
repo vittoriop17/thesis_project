@@ -1,0 +1,12 @@
+{
+    "cluster_selection_epsilon": 0.2,
+    "cluster_selection_method": "eom",
+    "gen_min_span_tree": true,
+    "metric": "euclidean",
+    "min_cluster_size": 50,
+    "min_samples": 10,
+    "n_clusters": 30,
+    "outliers": 8299,
+    "prediction_data": true,
+    "score": 0.05744841465013376
+}
