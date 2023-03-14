@@ -90,7 +90,7 @@ class ClusteringPipeline:
         if training_sentences is None:
             print(f"Loading training sentences from {self.path_training_sentences}")
             self.training_sentences = get_sentences(self.path_training_sentences)
-            self.training_sentences = self.training_sentences[:100]
+            # self.training_sentences = self.training_sentences[:100]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings = self._get_embeddings(self.training_sentences)
@@ -230,6 +230,9 @@ class ClusteringPipeline:
         print(f"\nOverriding existing params with best params:"
               f"\n\nExisting params: \n\t{json.dumps(self.hdbscan_params, indent=4)}"
               f"\n\nNew params (best params after random grid search): \n\t{json.dumps(best_params, indent=4)}")
+        best_params.pop('n_clusters', None)
+        best_params.pop('outliers', None)
+        best_params.pop('score', None)
         self.hdbscan_params = best_params
         self.hdbscan_model = None
         return best_validitiy_score
