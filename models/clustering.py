@@ -55,13 +55,14 @@ class ClusteringPipeline:
                  train_sentences_path=None, check_hopkins_test=False,
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
                  hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean', hdbscan_cluster_method='eom',
-                 hdbscan_epsilon=0.2, **kwargs):
+                 hdbscan_epsilon=0.2, folder_results=os.path.join("results", "HDBSCAN"), **kwargs):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
         self.n_components = n_components
         self.check_hopkins_test = check_hopkins_test
         self.validate_umap = validate_umap
         self.hdbscan_model = None
+        self.folder_results = folder_results
         self.umap_params = {'metric': umap_metric,
                             'n_components': self.n_components,
                             'min_dist': umap_min_dist,
@@ -77,6 +78,9 @@ class ClusteringPipeline:
 
         # Check variables
         self._sanity_check()
+
+        # Load existing results from folder_results (only when parameter search is applied for hdbscan)
+        self._load_partial_results()
 
         # Load fine-tuned bi-encoder model
         print(f"Loading pre-trained bi-encoder from path {self.bi_encoder_path}")
@@ -101,6 +105,9 @@ class ClusteringPipeline:
             f"Must provide a path to training sentences if training sentences are not provided"
         assert os.path.exists(self.path_training_sentences) if self.training_sentences is None else True, \
             f"Invalid path for path_training_sentences. No file found ({self.path_training_sentences})"
+        if os.path.basename(os.getcwd()) == "models":
+            self.folder_results = os.path.join("..", self.folder_results)
+        assert os.path.exists(self.folder_results), f"Result folder not found: path: {self.folder_results}"
 
     def _load_model(self):
         self.sbert_model = SentenceTransformer(self.bi_encoder_path,
@@ -115,6 +122,11 @@ class ClusteringPipeline:
         umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
         self.umap_model = umap_model
         return umap_sentence_embeddings
+
+    def _load_partial_results(self):
+        self.existing_ids = []
+        for filename in os.listdir(self.folder_results):
+            self.existing_ids.append(filename)
 
     def _validate_umap(self, sentence_embeddings):
         print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
@@ -194,6 +206,9 @@ class ClusteringPipeline:
             hdbscan_model = hdbscan.HDBSCAN(**params)
             hdbscan_model.fit(X)
             mid = hash(frozenset(params.items()))
+            # check if the current set of parameters has been already used
+            if mid in self.existing_ids:
+                continue
             print(f"\nExperiment with params: {json.dumps(params, indent=2)}"
                   f"\nModel: {hdbscan_model}\n")
             score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric, d=self.umap_params['n_components'])
@@ -206,7 +221,7 @@ class ClusteringPipeline:
             params['n_clusters'] = len(set(hdbscan_model.labels_))
             params['outliers'] = sum(hdbscan_model.labels_==-1)
             params['score'] = score
-            # self.save_partial_results_hdbscan(params, mid)
+            self.save_partial_results_hdbscan(params, mid)
             del hdbscan_model
         best_params.pop('memory', None)
         print(f"\nDBCV score :{best_validitiy_score}")
@@ -249,7 +264,8 @@ class ClusteringPipeline:
               f"\tdavies_bouldin_score: the lower the better.")
 
     def save_partial_results_hdbscan(self, hdbscan_params_and_results, mid):
-        json.dump(hdbscan_params_and_results, open(f"hdbscan_{np.abs(mid)}", "w"))
+        filepath = os.path.join(self.folder_results, mid)
+        json.dump(hdbscan_params_and_results, open(filepath, "w"))
 
     def plot_clusters(self, sentences):
         # TODO - save data
