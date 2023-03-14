@@ -265,7 +265,7 @@ class ClusteringPipeline:
 
     def save_partial_results_hdbscan(self, hdbscan_params_and_results, mid):
         filepath = os.path.join(self.folder_results, str(mid))
-        json.dump(hdbscan_params_and_results, open(filepath, "w"))
+        json.dump(hdbscan_params_and_results, open(filepath, "w"), indent=4, sort_keys=True)
 
     def plot_clusters(self, sentences):
         # TODO - save data
