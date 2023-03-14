@@ -67,3 +67,5 @@ def tsne_visualization(df, embedding_name='sif_embeddings'):
     fig.update_traces(showlegend=False)
     fig.show()
 
+
+# def hdbscan_param_search_results(parameter):
