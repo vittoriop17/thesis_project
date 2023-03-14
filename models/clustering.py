@@ -208,6 +208,7 @@ class ClusteringPipeline:
             mid = hash(frozenset(params.items()))
             # check if the current set of parameters has been already used
             if mid in self.existing_ids:
+                print(f"\033[93mSet of params already tested\n\33[30m\n")
                 continue
             print("\n---------------------------------------------------------\n")
             print(f"\nExperiment with params: {json.dumps(params, indent=2)}"
