@@ -16,6 +16,7 @@ import seaborn as sns
 from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score
 from tqdm import tqdm
 import joblib
+import pandas as pd
 
 LOCATION = '/tmp/joblib'
 SEED = 42
@@ -39,6 +40,16 @@ def validity_index_score(estimator, X_test):
     except:
         pass
     return hdbscan.validity.validity_index(X_train, y_pred_training, metric=estimator.metric)
+
+
+def get_clustering_results(folder):
+    data = []  # list of dicts
+    for filename in os.listdir(folder):
+        filepath = os.path.join(folder, filename)
+        if os.path.isfile(filepath):
+            data.append(json.load(open(filepath, "r")))
+    print(f"Total configurations: {len(data)}")
+    return pd.DataFrame.from_records(data)
 
 
 def get_sentences(path):
@@ -127,7 +138,7 @@ class ClusteringPipeline:
         self.existing_ids = []
         for filename in os.listdir(self.folder_results):
             try:
-                mid = int(filename)
+                mid = int(filename.strip())
                 self.existing_ids.append(mid)
             except:
                 pass
@@ -205,7 +216,7 @@ class ClusteringPipeline:
         # hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True, prediction_data=True, metric=metric)
         best_validitiy_score = - np.inf
         best_params = {}
-        param_list = list(ParameterSampler(param_distributions=self.param_dist, n_iter=n_iter_search, random_state=42))
+        param_list = list(ParameterSampler(param_distributions=self.param_dist, n_iter=n_iter_search))
         for params in tqdm(param_list):
             # params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
             hdbscan_model = hdbscan.HDBSCAN(**params)
@@ -310,3 +321,6 @@ class ClusteringPipeline:
         joblib.dump(self.hdbscan_model, filename)
 
 
+if __name__=='__main__':
+    df = get_clustering_results("..\\results\\HDBSCAN")
+    breakpoint()
