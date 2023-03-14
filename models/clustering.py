@@ -126,7 +126,11 @@ class ClusteringPipeline:
     def _load_partial_results(self):
         self.existing_ids = []
         for filename in os.listdir(self.folder_results):
-            self.existing_ids.append(filename)
+            try:
+                mid = int(filename)
+                self.existing_ids.append(mid)
+            except:
+                pass
         print(f"Found {len(self.existing_ids)} experiments")
 
     def _validate_umap(self, sentence_embeddings):
@@ -206,7 +210,7 @@ class ClusteringPipeline:
             # params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
             hdbscan_model = hdbscan.HDBSCAN(**params)
             hdbscan_model.fit(X)
-            mid = hash(frozenset(params.items()))
+            mid = int(hash(frozenset(params.items())))
             # check if the current set of parameters has been already used
             if mid in self.existing_ids:
                 print(f"\033[93mSet of params already tested\n\33[30m\n")
