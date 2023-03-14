@@ -209,6 +209,7 @@ class ClusteringPipeline:
             # check if the current set of parameters has been already used
             if mid in self.existing_ids:
                 continue
+            print("\n---------------------------------------------------------\n")
             print(f"\nExperiment with params: {json.dumps(params, indent=2)}"
                   f"\nModel: {hdbscan_model}\n")
             score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric, d=self.umap_params['n_components'])
