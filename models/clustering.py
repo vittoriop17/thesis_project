@@ -127,6 +127,7 @@ class ClusteringPipeline:
         self.existing_ids = []
         for filename in os.listdir(self.folder_results):
             self.existing_ids.append(filename)
+        print(f"Found {len(self.existing_ids)} experiments")
 
     def _validate_umap(self, sentence_embeddings):
         print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
