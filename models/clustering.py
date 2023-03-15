@@ -17,6 +17,8 @@ from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score
 from tqdm import tqdm
 import joblib
 import pandas as pd
+import plotly.express as px
+
 
 LOCATION = '/tmp/joblib'
 SEED = 42
@@ -313,12 +315,27 @@ class ClusteringPipeline:
         bidim_sentence_embeddings_wo_outlies = bidim_sentence_embeddings[predictions != 0, :]
         plt.scatter(x=bidim_sentence_embeddings_wo_outlies[:, 0], y=bidim_sentence_embeddings_wo_outlies[:, 1],
                     alpha=0.5, c=colors_wo_outliers[predictions_wo_outliers], s=1)
+        df = pd.concat([bidim_sentence_embeddings[:, 0],
+                        bidim_sentence_embeddings[:, 1],
+                        sentences,
+                        predictions
+                        ], axis=1)
+        df.columns = ['x1', 'x2', 'sentence', 'cluster']
+        scatter_with_sentences(df)
         plt.savefig("clustering_wo_outliers.png", bbox_inches='tight')
         plt.show()
 
     def save_hdbscan_model(self):
         filename = 'hdbscan_model.joblib'
         joblib.dump(self.hdbscan_model, filename)
+
+
+def scatter_with_sentences(df):
+    fig = px.scatter(df, x="x1", y="x2", hover_data=["sentence"], color='cluster')
+    fig.write_html("plotly_sentences.html")
+    fig.show()
+
+
 
 
 if __name__=='__main__':
