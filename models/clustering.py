@@ -293,7 +293,6 @@ class ClusteringPipeline:
         json.dump(hdbscan_params_and_results, open(filepath, "w"), indent=4, sort_keys=True)
 
     def plot_clusters(self, sentences):
-        # TODO - save data
         # N.b.: the HDBSCAN algorithm is applied to the sentence embedding in a N-dimensional space.
         # then, the cluster information is used to plot the datapoints in a 2-dimensional space.
         # thus, be aware that the data for HDBSCAN and the data used for visualization lie in two different spaces!
@@ -305,6 +304,7 @@ class ClusteringPipeline:
         predictions, probs = hdbscan.approximate_predict(self.hdbscan_model, sentence_embeddings_for_clustering)
         print(predictions)
         predictions = np.array(predictions).astype('int') + 1
+        self.plot_cluster_dist(predictions)
         n_clusters = len(set(predictions))
         colors = np.array([list(np.random.choice(range(256), size=3)) for _ in range(n_clusters)]) / 255
         colors[0] = (1, 0, 0)
@@ -317,14 +317,33 @@ class ClusteringPipeline:
         bidim_sentence_embeddings_wo_outlies = bidim_sentence_embeddings[predictions != 0, :]
         plt.scatter(x=bidim_sentence_embeddings_wo_outlies[:, 0], y=bidim_sentence_embeddings_wo_outlies[:, 1],
                     alpha=0.5, c=colors_wo_outliers[predictions_wo_outliers], s=1)
-        x1_x2_sentence_cluster = np.concatenate([bidim_sentence_embeddings[:, 0],
-                                                 bidim_sentence_embeddings[:, 1],
-                                                 sentences,
-                                                 predictions
+        x1_x2_sentence_cluster = np.concatenate([bidim_sentence_embeddings[:, 0].reshape(-1,1),
+                                                 bidim_sentence_embeddings[:, 1].reshape(-1,1),
+                                                 sentences.reshape(-1,1),
+                                                 predictions.reshape(-1,1)
                                                  ], axis=1)
         df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster'])
         scatter_with_sentences(df)
         plt.savefig("clustering_wo_outliers.png", bbox_inches='tight')
+        plt.show()
+
+    def plot_analysis(self):
+        self.hdbscan_model.single_linkage_tree_.plot()
+        plt.savefig("single_linkage_tree.png", bbox_inches='tight')
+        self.hdbscan_model.condensed_tree_.plot(select_clusters=True,
+                                       selection_palette=sns.color_palette('deep', 8))
+        plt.savefig("condensed_tree.png", bbox_inches='tight')
+
+
+    def plot_cluster_dist(self, cluster_preds):
+        bars, height = np.unique(cluster_preds)
+        y_pos = np.arange(len(bars))
+        # Create bars
+        plt.bar(y_pos, height)
+        # Create names on the x-axis
+        plt.xticks(y_pos, bars)
+        plt.savefig("cluster_distribution.png", bbox_inches='tight')
+        # Show graphic
         plt.show()
 
     def save_hdbscan_model(self):
