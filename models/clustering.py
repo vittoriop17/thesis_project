@@ -319,7 +319,7 @@ class ClusteringPipeline:
                     alpha=0.5, c=colors_wo_outliers[predictions_wo_outliers], s=1)
         x1_x2_sentence_cluster = np.concatenate([bidim_sentence_embeddings[:, 0],
                                                  bidim_sentence_embeddings[:, 1],
-                                                 pd.Seriessentences,
+                                                 sentences,
                                                  predictions
                                                  ], axis=1)
         df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster'])
