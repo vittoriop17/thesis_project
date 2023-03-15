@@ -46,7 +46,7 @@ def get_clustering_results(folder):
     data = []  # list of dicts
     for filename in os.listdir(folder):
         filepath = os.path.join(folder, filename)
-        if os.path.isfile(filepath):
+        if os.path.isfile(filepath) and filename != '.gitignore':
             data.append(json.load(open(filepath, "r")))
     print(f"Total configurations: {len(data)}")
     return pd.DataFrame.from_records(data)
@@ -60,6 +60,10 @@ def get_sentences(path):
                 sentences.append(line)
     return sentences
 
+
+def plot_analysis(df):
+    top_10_scores = set(sorted(df.score)[::-1][:10])
+    df[df.score.isin(top_10_scores)]
 
 class ClusteringPipeline:
     def __init__(self, bi_encoder_path, training_sentences: list = None,
@@ -173,15 +177,10 @@ class ClusteringPipeline:
                 self.umap_params[k] = v
 
     def _prepare_evaluation(self, metric):
-        self.param_dist = {'min_samples': [1, 2, 5, 10, 25, 50],
-                           'min_cluster_size': [5, 10, 25, 50],
-                           'cluster_selection_method': ['eom', 'leaf'],
-                           'metric': [metric],
+        self.param_dist = {'min_samples': [1, 2, 5, 10, 25, 50], 'min_cluster_size': [5, 10, 25, 50],
+                           'cluster_selection_method': ['eom', 'leaf'], 'metric': [metric],
                            'cluster_selection_epsilon': [0.05, 0.1, 0.2],
-                           'prediction_data': [True],
-                           'gen_min_span_tree': [True],
-                           # 'memory': [Memory(LOCATION, verbose=0)]
-                           }
+                           'prediction_data': [True] if metric == 'euclidean' else [False], 'gen_min_span_tree': [True]}
         self.cosine_similarity_matrix = cosine_similarity(self.training_embeddings)
 
     def _check_hopkins(self):
@@ -194,6 +193,7 @@ class ClusteringPipeline:
 
     def evaluate(self):
         score_euclidean = self._evaluate_metric("euclidean")
+        # score_euclidean = 0
         best_params_euclidean = self.hdbscan_params
         best_hdbscan_model = self.hdbscan_model
         score_precomputed = self._evaluate_metric("precomputed")
@@ -220,7 +220,7 @@ class ClusteringPipeline:
         for params in tqdm(param_list):
             # params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
             hdbscan_model = hdbscan.HDBSCAN(**params)
-            hdbscan_model.fit(X)
+            hdbscan_model.fit(X.astype('double'))
             mid = int(hash(frozenset(params.items())))
             # check if the current set of parameters has been already used
             if mid in self.existing_ids:
