@@ -336,7 +336,7 @@ class ClusteringPipeline:
 
 
     def plot_cluster_dist(self, cluster_preds):
-        bars, height = np.unique(cluster_preds)
+        bars, height = np.unique(cluster_preds, return_counts=True)
         y_pos = np.arange(len(bars))
         # Create bars
         plt.bar(y_pos, height)
