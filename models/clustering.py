@@ -19,7 +19,6 @@ import joblib
 import pandas as pd
 import plotly.express as px
 
-
 LOCATION = '/tmp/joblib'
 SEED = 42
 
@@ -67,11 +66,13 @@ def plot_analysis(df):
     top_10_scores = set(sorted(df.score)[::-1][:10])
     df[df.score.isin(top_10_scores)]
 
+
 class ClusteringPipeline:
     def __init__(self, bi_encoder_path, training_sentences: list = None,
                  train_sentences_path=None, check_hopkins_test=False,
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
-                 hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean', hdbscan_cluster_method='eom',
+                 hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean',
+                 hdbscan_cluster_method='eom',
                  hdbscan_epsilon=0.2, folder_results=os.path.join("results", "HDBSCAN"), **kwargs):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
@@ -107,7 +108,7 @@ class ClusteringPipeline:
         if training_sentences is None:
             print(f"Loading training sentences from {self.path_training_sentences}")
             self.training_sentences = get_sentences(self.path_training_sentences)
-            # self.training_sentences = self.training_sentences[:100]
+            self.training_sentences = self.training_sentences[:100]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings = self._get_embeddings(self.training_sentences)
@@ -231,15 +232,16 @@ class ClusteringPipeline:
             print("\n---------------------------------------------------------\n")
             print(f"\nExperiment with params: {json.dumps(params, indent=2)}"
                   f"\nModel: {hdbscan_model}\n")
-            score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric, d=self.umap_params['n_components'])
+            score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric,
+                                                    d=self.umap_params['n_components'])
             print(f"\033[94mScore {score}"
                   f"\nN.Clusters: {len(set(hdbscan_model.labels_))}"
-                  f"\nOutliers: {sum(hdbscan_model.labels_==-1)}\n\33[30m")
+                  f"\nOutliers: {sum(hdbscan_model.labels_ == -1)}\n\33[30m")
             if score > best_validitiy_score:
                 best_validitiy_score = score
                 best_params = params
             params['n_clusters'] = len(set(hdbscan_model.labels_))
-            params['outliers'] = int(sum(hdbscan_model.labels_==-1))
+            params['outliers'] = int(sum(hdbscan_model.labels_ == -1))
             params['score'] = score
             self.save_partial_results_hdbscan(params, mid)
             del hdbscan_model
@@ -271,9 +273,9 @@ class ClusteringPipeline:
               f"\t(davies_bouldin_score): {davies_bouldin_score(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\n\n"
-              
+
               f"Number of clusters: {len(set(self.hdbscan_model.labels_))}\n"
-              f"Number of outliers: {sum(self.hdbscan_model.labels_==-1)}"
+              f"Number of outliers: {sum(self.hdbscan_model.labels_ == -1)}"
               f"\n\n"
 
               f"Evaluation on test data: TODO"
@@ -315,12 +317,12 @@ class ClusteringPipeline:
         bidim_sentence_embeddings_wo_outlies = bidim_sentence_embeddings[predictions != 0, :]
         plt.scatter(x=bidim_sentence_embeddings_wo_outlies[:, 0], y=bidim_sentence_embeddings_wo_outlies[:, 1],
                     alpha=0.5, c=colors_wo_outliers[predictions_wo_outliers], s=1)
-        df = pd.concat([bidim_sentence_embeddings[:, 0],
-                        bidim_sentence_embeddings[:, 1],
-                        sentences,
-                        predictions
-                        ], axis=1)
-        df.columns = ['x1', 'x2', 'sentence', 'cluster']
+        x1_x2_sentence_cluster = np.concatenate([bidim_sentence_embeddings[:, 0],
+                                                 bidim_sentence_embeddings[:, 1],
+                                                 pd.Seriessentences,
+                                                 predictions
+                                                 ], axis=1)
+        df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster'])
         scatter_with_sentences(df)
         plt.savefig("clustering_wo_outliers.png", bbox_inches='tight')
         plt.show()
@@ -336,8 +338,6 @@ def scatter_with_sentences(df):
     fig.show()
 
 
-
-
-if __name__=='__main__':
+if __name__ == '__main__':
     df = get_clustering_results("..\\results\\HDBSCAN")
     breakpoint()
