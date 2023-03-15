@@ -329,8 +329,8 @@ class ClusteringPipeline:
         plt.show()
 
     def plot_analysis(self):
-        self.hdbscan_model.single_linkage_tree_.plot()
-        plt.savefig("single_linkage_tree.png", bbox_inches='tight')
+        # self.hdbscan_model.single_linkage_tree_.plot()
+        # plt.savefig("single_linkage_tree.png", bbox_inches='tight')
         self.hdbscan_model.condensed_tree_.plot(select_clusters=True,
                                        selection_palette=sns.color_palette('deep', 8))
         plt.savefig("condensed_tree.png", bbox_inches='tight')
