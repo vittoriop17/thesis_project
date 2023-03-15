@@ -318,10 +318,10 @@ class ClusteringPipeline:
         bidim_sentence_embeddings_wo_outlies = bidim_sentence_embeddings[predictions != 0, :]
         plt.scatter(x=bidim_sentence_embeddings_wo_outlies[:, 0], y=bidim_sentence_embeddings_wo_outlies[:, 1],
                     alpha=0.5, c=colors_wo_outliers[predictions_wo_outliers], s=1)
-        x1_x2_sentence_cluster = np.concatenate([bidim_sentence_embeddings[:, 0].reshape(-1,1),
-                                                 bidim_sentence_embeddings[:, 1].reshape(-1,1),
+        x1_x2_sentence_cluster = np.concatenate([bidim_sentence_embeddings[:, 0].reshape(-1,1).astype('double'),
+                                                 bidim_sentence_embeddings[:, 1].reshape(-1,1).astype('double'),
                                                  np.array(self.training_sentences).reshape(-1,1),
-                                                 predictions.reshape(-1,1)
+                                                 predictions.reshape(-1, 1)
                                                  ], axis=1)
         df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster'])
         scatter_with_sentences(df)
@@ -367,7 +367,7 @@ class ClusteringPipeline:
 
 
 def scatter_with_sentences(df):
-    fig = px.scatter(df, x="x1", y="x2", hover_data=["sentence"], color='cluster')
+    fig = px.scatter(df, x="x1", y="x2", hover_data="sentence", color='cluster')
     fig.write_html("plotly_sentences.html")
     fig.show()
 
