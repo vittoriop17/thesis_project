@@ -258,7 +258,7 @@ class ClusteringPipeline:
         X = cosine_similarity(self.training_embeddings) if self.hdbscan_params['metric'] == 'precomputed' \
             else self.training_embeddings
         if self.hdbscan_model is None:
-            self.hdbscan_model = hdbscan.HDBSCAN(**self.hdbscan_params)
+            self.hdbscan_model = hdbscan.HDBSCAN(prediction_data=True, **self.hdbscan_params)
         self.hdbscan_model.fit(X)
         # test_labels, _ = hdbscan.approximate_predict(self.hdbscan_model, self.test_sentences)
         # Drawbacks
