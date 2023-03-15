@@ -342,6 +342,9 @@ class ClusteringPipeline:
         plt.bar(y_pos, height)
         # Create names on the x-axis
         plt.xticks(y_pos, bars)
+        plt.title("Sentences per cluster")
+        plt.xlabel("Cluster ID (0: outliers)")
+        plt.ylabel("N. sentences")
         plt.savefig("cluster_distribution.png", bbox_inches='tight')
         # Show graphic
         plt.show()
