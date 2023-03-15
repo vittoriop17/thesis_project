@@ -12,7 +12,7 @@ def main(args):
         if args.validate_hdbscan:
             clustering_pipe.evaluate()
         clustering_pipe.train_over_all_sentences()
-        clustering_pipe.plot_clusters(clustering_pipe.original_sentence_embeddings)
+        clustering_pipe.plot_clusters()
         clustering_pipe.plot_analysis()
         clustering_pipe.save_hdbscan_model()
     else:

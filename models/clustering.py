@@ -292,15 +292,16 @@ class ClusteringPipeline:
         filepath = os.path.join(self.folder_results, str(mid))
         json.dump(hdbscan_params_and_results, open(filepath, "w"), indent=4, sort_keys=True)
 
-    def plot_clusters(self, sentences):
+    def plot_clusters(self, sentence_embeddings=None):
         # N.b.: the HDBSCAN algorithm is applied to the sentence embedding in a N-dimensional space.
         # then, the cluster information is used to plot the datapoints in a 2-dimensional space.
         # thus, be aware that the data for HDBSCAN and the data used for visualization lie in two different spaces!
+        sentence_embeddings = self.original_sentence_embeddings if sentence_embeddings is None else sentence_embeddings
         umap_params = self.umap_params
         umap_params['n_components'] = 2
         bi_dim_umap_model = umap.UMAP(**umap_params)
-        bidim_sentence_embeddings = bi_dim_umap_model.fit_transform(sentences)
-        sentence_embeddings_for_clustering = self.umap_model.transform(sentences)
+        bidim_sentence_embeddings = bi_dim_umap_model.fit_transform(sentence_embeddings)
+        sentence_embeddings_for_clustering = self.umap_model.transform(sentence_embeddings)
         predictions, probs = hdbscan.approximate_predict(self.hdbscan_model, sentence_embeddings_for_clustering)
         print(predictions)
         predictions = np.array(predictions).astype('int') + 1
@@ -319,7 +320,7 @@ class ClusteringPipeline:
                     alpha=0.5, c=colors_wo_outliers[predictions_wo_outliers], s=1)
         x1_x2_sentence_cluster = np.concatenate([bidim_sentence_embeddings[:, 0].reshape(-1,1),
                                                  bidim_sentence_embeddings[:, 1].reshape(-1,1),
-                                                 sentences.reshape(-1,1),
+                                                 np.array(self.training_sentences).reshape(-1,1),
                                                  predictions.reshape(-1,1)
                                                  ], axis=1)
         df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster'])
@@ -341,13 +342,24 @@ class ClusteringPipeline:
         # Create bars
         plt.bar(y_pos, height)
         # Create names on the x-axis
-        plt.xticks(y_pos, bars)
+        plt.xticks(y_pos, bars, rotation=45, fontsize=6)
         plt.title("Sentences per cluster")
         plt.xlabel("Cluster ID (0: outliers)")
         plt.ylabel("N. sentences")
         plt.savefig("cluster_distribution.png", bbox_inches='tight')
         # Show graphic
         plt.show()
+        # PLOT CLUSTER DISTRIBUTION WITHOUT OUTLIERS INFO
+        plt.bar(y_pos[1:], height[1:])
+        # Create names on the x-axis
+        plt.xticks(y_pos[1:], bars[1:], rotation=45, fontsize=6)
+        plt.title("Sentences per cluster (without outliers)")
+        plt.xlabel("Cluster ID")
+        plt.ylabel("N. sentences")
+        plt.savefig("cluster_distribution_wo_outliers.png", bbox_inches='tight')
+        # Show graphic
+        plt.show()
+
 
     def save_hdbscan_model(self):
         filename = 'hdbscan_model.joblib'
