@@ -117,8 +117,8 @@ class ClusteringPipeline:
         self._check_hopkins()
 
     def _sanity_check(self):
-        assert os.path.exists(
-            self.bi_encoder_path), f"Invalid path for bi_encoder model. Passed value: {self.bi_encoder_path}"
+        assert os.path.exists(self.bi_encoder_path) or self.bi_encoder_path=='bert-base-uncased',\
+            f"Invalid path for bi_encoder model. Passed value: {self.bi_encoder_path}"
         assert self.path_training_sentences is not None if self.training_sentences is None else True, \
             f"Must provide a path to training sentences if training sentences are not provided"
         assert os.path.exists(self.path_training_sentences) if self.training_sentences is None else True, \
