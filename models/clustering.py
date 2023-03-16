@@ -326,7 +326,7 @@ class ClusteringPipeline:
                                                  predictions.reshape(-1, 1),
                                                  probs.reshape(-1, 1).astype('float')
                                                  ], axis=1)
-        float_columns = ['x1', 'x2', 'probabilities']
+        float_columns = ['x1', 'x2', 'probability']
         df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster', 'probability'])
         for col_name in float_columns:
             df[col_name] = df[col_name].astype(float)
@@ -384,7 +384,7 @@ class ClusteringPipeline:
 
 def scatter_with_sentences(df, name=None):
     name = 'plotly_sentences.html' if name is None else name
-    fig = px.scatter(df, x="x1", y="x2", hover_data=["sentence"], color='cluster', size='probabilities')
+    fig = px.scatter(df, x="x1", y="x2", hover_data=["sentence"], color='cluster', size='probability')
     fig.write_html(name)
     fig.show()
 
