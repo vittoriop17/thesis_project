@@ -337,7 +337,7 @@ class ClusteringPipeline:
         x1_x2_sentence_cluster_wo_outliers = np.concatenate(
             [bidim_sentence_embeddings_wo_outlies[:, 0].reshape(-1, 1).astype('float'),
              bidim_sentence_embeddings_wo_outlies[:, 1].reshape(-1, 1).astype('float'),
-             np.array(self.training_sentences).reshape(-1, 1),
+             np.array(self.training_sentences)[predictions != 0].reshape(-1, 1),
              predictions_wo_outliers.reshape(-1, 1),
              probs[predictions != 0].reshape(-1, 1).astype('float')
              ], axis=1)
