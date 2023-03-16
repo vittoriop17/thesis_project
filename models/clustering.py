@@ -113,12 +113,6 @@ class ClusteringPipeline:
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings = self._get_embeddings(self.training_sentences)
         self.training_embeddings = self.training_embeddings.astype('double')
-        app = np.concatenate([np.array(self.training_sentences).reshape(-1, 1),
-                              self.original_sentence_embeddings.reshape(len(self.training_sentences), -1)
-                              ], axis=-1)
-        cols = ['sentence']
-        cols.extend([f"x{i}" for i in range(self.original_sentence_embeddings.shape[-1])])
-        pd.DataFrame(app, columns=cols).to_csv("sentence_embeddings_no_fine_tuning.csv", index=False)
         # Check if embeddings are not uniformly distributed in the embedding space (hopkins test)
         self._check_hopkins()
 
@@ -140,6 +134,12 @@ class ClusteringPipeline:
     def _get_embeddings(self, sentences):
         sentence_embeddings = self.sbert_model.encode(sentences)
         self.original_sentence_embeddings = sentence_embeddings
+        app = np.concatenate([np.array(sentences).reshape(-1, 1),
+                              self.original_sentence_embeddings.reshape(len(sentences), -1)
+                              ], axis=-1)
+        cols = ['sentence']
+        cols.extend([f"x{i}" for i in range(self.original_sentence_embeddings.shape[-1])])
+        pd.DataFrame(app, columns=cols).to_csv("sentence_embeddings_no_fine_tuning.csv", index=False)
         if self.validate_umap:
             self._validate_umap(sentence_embeddings)
         umap_model = umap.UMAP(**self.umap_params)
