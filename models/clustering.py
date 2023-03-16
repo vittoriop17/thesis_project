@@ -327,7 +327,7 @@ class ClusteringPipeline:
                                                  probs.reshape(-1, 1).astype('float')
                                                  ], axis=1)
         float_columns = ['x1', 'x2', 'probabilities']
-        df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster', 'probabilities'])
+        df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster', 'probability'])
         for col_name in float_columns:
             df[col_name] = df[col_name].astype(float)
         # print(f"{df.head(5)}")
@@ -341,10 +341,10 @@ class ClusteringPipeline:
              predictions_wo_outliers.reshape(-1, 1),
              probs[predictions != 0].reshape(-1, 1).astype('float')
              ], axis=1)
-        df = pd.DataFrame(x1_x2_sentence_cluster_wo_outliers, columns=['x1', 'x2', 'sentence', 'cluster', 'probabilities'])
+        df = pd.DataFrame(x1_x2_sentence_cluster_wo_outliers, columns=['x1', 'x2', 'sentence', 'cluster', 'probability'])
         for col_name in float_columns:
             df[col_name] = df[col_name].astype(float)
-        scatter_with_sentences(df)
+        scatter_with_sentences(df, "plotly_sentences_wo_outliers.html")
 
     def plot_analysis(self):
         # self.hdbscan_model.single_linkage_tree_.plot()
