@@ -328,7 +328,7 @@ class ClusteringPipeline:
                                                  ], axis=1)
         df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster', 'probabilities'])
         print(f"{df.head(5)}")
-        print(f"{df.info}")
+        df.info()
         scatter_with_sentences(df)
         # Scatter plot (without outliers) including sentence information (using plotly)
         x1_x2_sentence_cluster_wo_outliers = np.concatenate(
