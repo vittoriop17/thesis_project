@@ -1,3 +1,5 @@
+import pandas as pd
+
 from models import sbert_fine_tuning, clustering
 from utils.utils import *
 from sklearn.metrics.pairwise import cosine_similarity

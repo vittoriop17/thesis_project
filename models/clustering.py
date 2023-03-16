@@ -73,13 +73,15 @@ class ClusteringPipeline:
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
                  hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean',
                  hdbscan_cluster_method='eom',
-                 hdbscan_epsilon=0.2, folder_results=os.path.join("results", "HDBSCAN"), **kwargs):
+                 hdbscan_epsilon=0.2, folder_results=os.path.join("results", "HDBSCAN"),
+                 path_df_sentences_and_embeddings=None, **kwargs):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
         self.n_components = n_components
         self.check_hopkins_test = check_hopkins_test
         self.validate_umap = validate_umap
         self.hdbscan_model = None
+        self.original_sentence_embeddings = None
         self.folder_results = folder_results
         self.umap_params = {'metric': umap_metric,
                             'n_components': self.n_components,
@@ -106,9 +108,15 @@ class ClusteringPipeline:
 
         # Load sentences if training_sentences is empty
         if training_sentences is None:
-            print(f"Loading training sentences from {self.path_training_sentences}")
-            self.training_sentences = get_sentences(self.path_training_sentences)
-            # self.training_sentences = self.training_sentences[:100]
+            if path_df_sentences_and_embeddings is None:
+                print(f"Loading training sentences from {self.path_training_sentences}")
+                self.training_sentences = get_sentences(self.path_training_sentences)
+                # self.training_sentences = self.training_sentences[:100]
+            else:
+                print(f"Loading training sentences and training embeddings from {path_df_sentences_and_embeddings}")
+                df_s_e = pd.read_csv(path_df_sentences_and_embeddings)
+                self.training_sentences = df_s_e['Unnamed: 0']
+                self.original_training_embeddings = df_s_e[[f'{i}' for i in range(768)]]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings = self._get_embeddings(self.training_sentences)
@@ -132,18 +140,19 @@ class ClusteringPipeline:
                                                device="cuda" if torch.cuda.is_available() else "cpu")
 
     def _get_embeddings(self, sentences):
-        sentence_embeddings = self.sbert_model.encode(sentences)
-        self.original_sentence_embeddings = sentence_embeddings
-        app = np.concatenate([np.array(sentences).reshape(-1, 1),
-                              self.original_sentence_embeddings.reshape(len(sentences), -1)
-                              ], axis=-1)
-        cols = ['sentence']
-        cols.extend([f"x{i}" for i in range(self.original_sentence_embeddings.shape[-1])])
-        pd.DataFrame(app, columns=cols).to_csv("sentence_embeddings_no_fine_tuning.csv", index=False)
+        if self.original_training_embeddings is None:
+            sentence_embeddings = self.sbert_model.encode(sentences)
+            self.original_sentence_embeddings = sentence_embeddings
+        # app = np.concatenate([np.array(sentences).reshape(-1, 1),
+        #                       self.original_sentence_embeddings.reshape(len(sentences), -1)
+        #                       ], axis=-1)
+        # cols = ['sentence']
+        # cols.extend([f"x{i}" for i in range(self.original_sentence_embeddings.shape[-1])])
+        # pd.DataFrame(app, columns=cols).to_csv("sentence_embeddings_no_fine_tuning.csv", index=False)
         if self.validate_umap:
-            self._validate_umap(sentence_embeddings)
+            self._validate_umap(self.original_sentence_embeddings)
         umap_model = umap.UMAP(**self.umap_params)
-        umap_sentence_embeddings = umap_model.fit_transform(sentence_embeddings)
+        umap_sentence_embeddings = umap_model.fit_transform(self.original_sentence_embeddings)
         self.umap_model = umap_model
         return umap_sentence_embeddings
 
