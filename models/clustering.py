@@ -367,7 +367,7 @@ class ClusteringPipeline:
 
 
 def scatter_with_sentences(df):
-    fig = px.scatter(df, x="x1", y="x2", hover_data="sentence", color='cluster')
+    fig = px.scatter(df, x="x1", y="x2", hover_data=["sentence"], color='cluster')
     fig.write_html("plotly_sentences.html")
     fig.show()
 
