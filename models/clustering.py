@@ -318,23 +318,35 @@ class ClusteringPipeline:
         bidim_sentence_embeddings_wo_outlies = bidim_sentence_embeddings[predictions != 0, :]
         plt.scatter(x=bidim_sentence_embeddings_wo_outlies[:, 0], y=bidim_sentence_embeddings_wo_outlies[:, 1],
                     alpha=0.5, c=colors_wo_outliers[predictions_wo_outliers], s=1)
-        x1_x2_sentence_cluster = np.concatenate([bidim_sentence_embeddings[:, 0].reshape(-1,1).astype('double'),
-                                                 bidim_sentence_embeddings[:, 1].reshape(-1,1).astype('double'),
-                                                 np.array(self.training_sentences).reshape(-1,1),
-                                                 predictions.reshape(-1, 1)
-                                                 ], axis=1)
-        df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster'])
-        scatter_with_sentences(df)
         plt.savefig("clustering_wo_outliers.png", bbox_inches='tight')
-        plt.show()
+        # Scatter plot (with outliers) including sentence information (using plotly)
+        x1_x2_sentence_cluster = np.concatenate([bidim_sentence_embeddings[:, 0].reshape(-1, 1).astype('float'),
+                                                 bidim_sentence_embeddings[:, 1].reshape(-1, 1).astype('float'),
+                                                 np.array(self.training_sentences).reshape(-1, 1),
+                                                 predictions.reshape(-1, 1),
+                                                 probs.reshape(-1, 1)
+                                                 ], axis=1)
+        df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster', 'probabilities'])
+        print(f"{df.head(5)}")
+        print(f"{df.info}")
+        scatter_with_sentences(df)
+        # Scatter plot (without outliers) including sentence information (using plotly)
+        x1_x2_sentence_cluster_wo_outliers = np.concatenate(
+            [bidim_sentence_embeddings_wo_outlies[:, 0].reshape(-1, 1).astype('float'),
+             bidim_sentence_embeddings_wo_outlies[:, 1].reshape(-1, 1).astype('float'),
+             np.array(self.training_sentences).reshape(-1, 1),
+             predictions_wo_outliers.reshape(-1, 1),
+             probs[predictions != 0].reshape(-1, 1)
+             ], axis=1)
+        df = pd.DataFrame(x1_x2_sentence_cluster_wo_outliers, columns=['x1', 'x2', 'sentence', 'cluster', 'probabilities'])
+        scatter_with_sentences(df)
 
     def plot_analysis(self):
         # self.hdbscan_model.single_linkage_tree_.plot()
         # plt.savefig("single_linkage_tree.png", bbox_inches='tight')
         self.hdbscan_model.condensed_tree_.plot(select_clusters=True,
-                                       selection_palette=sns.color_palette('deep', 8))
+                                                selection_palette=sns.color_palette('deep', 8))
         plt.savefig("condensed_tree.png", bbox_inches='tight')
-
 
     def plot_cluster_dist(self, cluster_preds):
         bars, height = np.unique(cluster_preds, return_counts=True)
@@ -352,7 +364,7 @@ class ClusteringPipeline:
         # PLOT CLUSTER DISTRIBUTION WITHOUT OUTLIERS INFO
         plt.bar(y_pos[1:], height[1:])
         # Create names on the x-axis
-        plt.xticks(y_pos[1:], bars[1:], rotation=45, fontsize=6)
+        plt.xticks(y_pos[1:], bars[1:], rotation=90, fontsize=6)
         plt.title("Sentences per cluster (without outliers)")
         plt.xlabel("Cluster ID")
         plt.ylabel("N. sentences")
@@ -360,15 +372,15 @@ class ClusteringPipeline:
         # Show graphic
         plt.show()
 
-
     def save_hdbscan_model(self):
         filename = 'hdbscan_model.joblib'
         joblib.dump(self.hdbscan_model, filename)
 
 
-def scatter_with_sentences(df):
-    fig = px.scatter(df, x="x1", y="x2", hover_data=["sentence"], color='cluster')
-    fig.write_html("plotly_sentences.html")
+def scatter_with_sentences(df, name=None):
+    name = 'plotly_sentences.html' if name is None else name
+    fig = px.scatter(df, x="x1", y="x2", hover_data=["sentence"], color='cluster', size='probabilities')
+    fig.write_html(name)
     fig.show()
 
 
