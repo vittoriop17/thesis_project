@@ -173,6 +173,8 @@ def upload_args(file_path=None):
     # ------- Arguments for clustering (DISNEY DATASET ONLY)
     parser.add_argument("--train_sentences_path", type=str,
                         help="Path to the training sentences (used to train the clustering model)")
+    parser.add_argument("--embeddings_path", type=str,
+                        help="Path to the training sentences and training emb (used to train the clustering model)")
     parser.add_argument("--validate_umap", action="store_true", default=False,
                         help="Boolean flag. If specified, apply UMAP model validation "
                              "(min_dist and n_components are fine-tuned, based on trustworthiness metric)")
