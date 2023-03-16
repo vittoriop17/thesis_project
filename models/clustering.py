@@ -74,7 +74,7 @@ class ClusteringPipeline:
                  hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean',
                  hdbscan_cluster_method='eom',
                  hdbscan_epsilon=0.2, folder_results=os.path.join("results", "HDBSCAN"),
-                 path_df_sentences_and_embeddings=None, **kwargs):
+                 embeddings_path=None, **kwargs):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
         self.n_components = n_components
@@ -108,15 +108,15 @@ class ClusteringPipeline:
 
         # Load sentences if training_sentences is empty
         if training_sentences is None:
-            if path_df_sentences_and_embeddings is None:
+            if embeddings_path is None:
                 print(f"Loading training sentences from {self.path_training_sentences}")
                 self.training_sentences = get_sentences(self.path_training_sentences)
                 # self.training_sentences = self.training_sentences[:100]
             else:
-                print(f"Loading training sentences and training embeddings from {path_df_sentences_and_embeddings}")
-                df_s_e = pd.read_csv(path_df_sentences_and_embeddings)
+                print(f"Loading training sentences and training embeddings from {embeddings_path}")
+                df_s_e = pd.read_csv(embeddings_path)
                 self.training_sentences = df_s_e['Unnamed: 0']
-                self.original_training_embeddings = df_s_e[[f'{i}' for i in range(768)]]
+                self.original_sentence_embeddings = df_s_e[[f'{i}' for i in range(768)]]
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
         self.training_embeddings = self._get_embeddings(self.training_sentences)
@@ -140,7 +140,7 @@ class ClusteringPipeline:
                                                device="cuda" if torch.cuda.is_available() else "cpu")
 
     def _get_embeddings(self, sentences):
-        if self.original_training_embeddings is None:
+        if self.original_sentence_embeddings is None:
             sentence_embeddings = self.sbert_model.encode(sentences)
             self.original_sentence_embeddings = sentence_embeddings
         # app = np.concatenate([np.array(sentences).reshape(-1, 1),
