@@ -164,8 +164,8 @@ class ClusteringPipeline:
         self.umap_model = umap.UMAP(**self.umap_params)
         self.training_embeddings = self.umap_model.fit_transform(self.original_sentence_embeddings).astype('double')
         print(f"Dimensionality reduction concluded. "
-              f"From {self.original_sentence_embeddings.shape[0]}-d vectors to "
-              f"{self.training_embeddings.shape[0]}-d vectors")
+              f"From {self.original_sentence_embeddings.shape[1]}-d vectors to "
+              f"{self.training_embeddings.shape[1]}-d vectors")
 
     def _load_partial_results(self):
         if self.validate_hdbscan:
@@ -286,6 +286,8 @@ class ClusteringPipeline:
         return best_validitiy_score
 
     def train_over_all_sentences(self):
+        print(f"\nStarting hdbscan training over all sentences, "
+              f"with {self.hdbscan_params['metric']+' distance metric' if self.hdbscan_params['metric'] != ' precomputed' else 'precomputed cosine similarity matrix'}...")
         X = cosine_similarity(self.training_embeddings) if self.hdbscan_params['metric'] == 'precomputed' \
             else self.training_embeddings
         if self.hdbscan_model is None:
@@ -295,25 +297,25 @@ class ClusteringPipeline:
         # Drawbacks
         # The Calinski-Harabasz AND davies_bouldin_score index is generally higher for convex clusters than other concepts of clusters,
         # such as density based clusters like those obtained through DBSCAN.
-        print(f"Evaluation on training data:"
-              f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.training_embeddings, self.hdbscan_model.labels_)}"
-              f"\t(davies_bouldin_score): {davies_bouldin_score(self.training_embeddings, self.hdbscan_model.labels_)}"
-              f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings, self.hdbscan_model.labels_)}"
-              f"\n\n"
-
-              f"Number of clusters: {len(set(self.hdbscan_model.labels_))}\n"
-              f"Number of outliers: {sum(self.hdbscan_model.labels_ == -1)}"
-              f"\n\n"
-
-              f"Evaluation on test data: TODO"
-              # f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.test_embeddings, test_labels)}"
-              # f"\t(davies_bouldin_score): {davies_bouldin_score(self.test_embeddings, test_labels)}"
-              # f"\tValidity index: {hdbscan.validity.validity_index(self.test_embeddings, test_labels)}"
-
-              f"\n\n"
-              f"Note: \n"
-              f"\tcalinski_harabasz_score: the larger the better.\n"
-              f"\tdavies_bouldin_score: the lower the better.")
+        # print(f"Evaluation on training data:"
+        #       f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.training_embeddings, self.hdbscan_model.labels_)}"
+        #       f"\t(davies_bouldin_score): {davies_bouldin_score(self.training_embeddings, self.hdbscan_model.labels_)}"
+        #       f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings, self.hdbscan_model.labels_)}"
+        #       f"\n\n"
+        #
+        #       f"Number of clusters: {len(set(self.hdbscan_model.labels_))}\n"
+        #       f"Number of outliers: {sum(self.hdbscan_model.labels_ == -1)}"
+        #       f"\n\n"
+        #
+        #       f"Evaluation on test data: TODO"
+        #       # f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.test_embeddings, test_labels)}"
+        #       # f"\t(davies_bouldin_score): {davies_bouldin_score(self.test_embeddings, test_labels)}"
+        #       # f"\tValidity index: {hdbscan.validity.validity_index(self.test_embeddings, test_labels)}"
+        #
+        #       f"\n\n"
+        #       f"Note: \n"
+        #       f"\tcalinski_harabasz_score: the larger the better.\n"
+        #       f"\tdavies_bouldin_score: the lower the better.")
 
     def save_partial_results_hdbscan(self, hdbscan_params_and_results, mid):
         filepath = os.path.join(self.folder_results, str(mid))
