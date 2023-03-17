@@ -53,15 +53,6 @@ def get_clustering_results(folder):
     return pd.DataFrame.from_records(data)
 
 
-def get_sentences(path):
-    sentences = []
-    with open(path, "r", encoding="utf-8") as fin:
-        for line in fin.readlines():
-            if line.strip() != "":
-                sentences.append(line)
-    return sentences
-
-
 def plot_analysis(df):
     top_10_scores = set(sorted(df.score)[::-1][:10])
     df[df.score.isin(top_10_scores)]
@@ -72,7 +63,7 @@ class ClusteringPipeline:
                  train_sentences_path=None, check_hopkins_test=False,
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
                  hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean',
-                 hdbscan_cluster_method='eom',
+                 hdbscan_cluster_method='eom', validate_hdbscan=False,
                  hdbscan_epsilon=0.2, folder_results=os.path.join("results", "HDBSCAN"),
                  embeddings_path=None, **kwargs):
         # Set variables
@@ -80,6 +71,7 @@ class ClusteringPipeline:
         self.n_components = n_components
         self.check_hopkins_test = check_hopkins_test
         self.validate_umap = validate_umap
+        self.validate_hdbscan = validate_hdbscan
         self.hdbscan_model = None
         self.original_sentence_embeddings = None
         self.folder_results = folder_results
@@ -95,6 +87,7 @@ class ClusteringPipeline:
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
         self.path_training_sentences = train_sentences_path
+        self.embeddings_path = embeddings_path
 
         # Check variables
         self._sanity_check()
@@ -102,27 +95,21 @@ class ClusteringPipeline:
         # Load existing results from folder_results (only when parameter search is applied for hdbscan)
         self._load_partial_results()
 
-        # Load fine-tuned bi-encoder model
-        print(f"Loading pre-trained bi-encoder from path {self.bi_encoder_path}")
-        self._load_model()
-
         # Load sentences if training_sentences is empty
         if training_sentences is None:
             if embeddings_path is None:
-                print(f"Loading training sentences from {self.path_training_sentences}")
-                self.training_sentences = get_sentences(self.path_training_sentences)
+                self._read_sentences()
                 # self.training_sentences = self.training_sentences[:100]
             else:
-                print(f"Loading training sentences and training embeddings from {embeddings_path}")
-                df_s_e = pd.read_csv(embeddings_path)
-                self.training_sentences = df_s_e['Unnamed: 0']
-                self.original_sentence_embeddings = df_s_e[[f'{i}' for i in range(768)]]
+                self._read_sentences_and_embeddings()
 
         # Extract embeddings and then compute similarity matrix (if necessary: metric=precomputed)
-        self.training_embeddings = self._get_embeddings(self.training_sentences)
-        self.training_embeddings = self.training_embeddings.astype('double')
+        self._reduce_embeddings()
         # Check if embeddings are not uniformly distributed in the embedding space (hopkins test)
         self._check_hopkins()
+        # Run HDBSCAN validation if required
+        if self.validate_hdbscan:
+            self.evaluate()
 
     def _sanity_check(self):
         assert os.path.exists(self.bi_encoder_path) or self.bi_encoder_path=='bert-base-uncased',\
@@ -136,13 +123,34 @@ class ClusteringPipeline:
         assert os.path.exists(self.folder_results), f"Result folder not found: path: {self.folder_results}"
 
     def _load_model(self):
+        print(f"\nLoading pre-trained bi-encoder from path {self.bi_encoder_path}")
         self.sbert_model = SentenceTransformer(self.bi_encoder_path,
                                                device="cuda" if torch.cuda.is_available() else "cpu")
+        print("Bi-encoder model loaded\n")
 
-    def _get_embeddings(self, sentences):
+    def _read_sentences(self):
+        print(f"\nLoading training sentences from {self.path_training_sentences}")
+        self.training_sentences = []
+        with open(self.path_training_sentences, "r", encoding="utf-8") as fin:
+            for line in fin.readlines():
+                if line.strip() != "":
+                    self.training_sentences.append(line)
+        print(f"Training sentences loaded. {len(self.training_sentences)} found\n")
+
+    def _read_sentences_and_embeddings(self):
+        print(f"\n\nLoading training sentences and training embeddings from {self.embeddings_path}")
+        df_s_e = pd.read_csv(self.embeddings_path)
+        self.training_sentences = df_s_e['Unnamed: 0']
+        self.original_sentence_embeddings = df_s_e[[f'{i}' for i in range(768)]]
+        print(f"Embeddings loaded!\n\n")
+
+    def _reduce_embeddings(self):
         if self.original_sentence_embeddings is None:
-            sentence_embeddings = self.sbert_model.encode(sentences)
-            self.original_sentence_embeddings = sentence_embeddings
+            print(f"\nOriginal sentence embeddings (before dim-reduction) will be produced with sBERT model...")
+            # Load fine-tuned bi-encoder model
+            self._load_model()  # self.sbert_model never used but in this situation
+            self.original_sentence_embeddings = self.sbert_model.encode(self.training_sentences)
+            print(f"...embeddings produced\n")
         # app = np.concatenate([np.array(sentences).reshape(-1, 1),
         #                       self.original_sentence_embeddings.reshape(len(sentences), -1)
         #                       ], axis=-1)
@@ -151,20 +159,24 @@ class ClusteringPipeline:
         # pd.DataFrame(app, columns=cols).to_csv("sentence_embeddings_no_fine_tuning.csv", index=False)
         if self.validate_umap:
             self._validate_umap(self.original_sentence_embeddings)
-        umap_model = umap.UMAP(**self.umap_params)
-        umap_sentence_embeddings = umap_model.fit_transform(self.original_sentence_embeddings)
-        self.umap_model = umap_model
-        return umap_sentence_embeddings
+        print(f"\nStarting UMAP dimensionality reduction with args: \n"
+              f"\t{json.dumps(self.umap_params, indent=4)}")
+        self.umap_model = umap.UMAP(**self.umap_params)
+        self.training_embeddings = self.umap_model.fit_transform(self.original_sentence_embeddings).astype('double')
+        print(f"Dimensionality reduction concluded. "
+              f"From {self.original_sentence_embeddings.shape[0]}-d vectors to "
+              f"{self.training_embeddings.shape[0]}-d vectors")
 
     def _load_partial_results(self):
-        self.existing_ids = []
-        for filename in os.listdir(self.folder_results):
-            try:
-                mid = int(filename.strip())
-                self.existing_ids.append(mid)
-            except:
-                pass
-        print(f"Found {len(self.existing_ids)} experiments")
+        if self.validate_hdbscan:
+            self.existing_ids = []
+            for filename in os.listdir(self.folder_results):
+                try:
+                    mid = int(filename.strip())
+                    self.existing_ids.append(mid)
+                except:
+                    pass
+            print(f"\nFound {len(self.existing_ids)} experiments")
 
     def _validate_umap(self, sentence_embeddings):
         print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
