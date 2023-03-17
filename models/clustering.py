@@ -59,7 +59,7 @@ def plot_analysis(df):
 
 
 class ClusteringPipeline:
-    def __init__(self, bi_encoder_path, training_sentences: list = None,
+    def __init__(self, bi_encoder_path=None, training_sentences: list = None,
                  train_sentences_path=None, check_hopkins_test=False,
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
                  hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean',
@@ -112,7 +112,7 @@ class ClusteringPipeline:
             self.evaluate()
 
     def _sanity_check(self):
-        assert os.path.exists(self.bi_encoder_path) or self.bi_encoder_path=='bert-base-uncased',\
+        assert os.path.exists(self.bi_encoder_path) or self.bi_encoder_path=='bert-base-uncased' if self.bi_encoder_path is not None else True,\
             f"Invalid path for bi_encoder model. Passed value: {self.bi_encoder_path}"
         assert self.path_training_sentences is not None if self.training_sentences is None else True, \
             f"Must provide a path to training sentences if training sentences are not provided"
@@ -140,8 +140,8 @@ class ClusteringPipeline:
     def _read_sentences_and_embeddings(self):
         print(f"\n\nLoading training sentences and training embeddings from {self.embeddings_path}")
         df_s_e = pd.read_csv(self.embeddings_path)
-        self.training_sentences = df_s_e['Unnamed: 0']
-        self.original_sentence_embeddings = df_s_e[[f'{i}' for i in range(768)]]
+        self.training_sentences = df_s_e['sentence'].to_numpy()
+        self.original_sentence_embeddings = df_s_e[[f'{i}' for i in range(768)]].to_numpy()
         print(f"Embeddings loaded!\n\n")
 
     def _reduce_embeddings(self):
@@ -156,7 +156,7 @@ class ClusteringPipeline:
         #                       ], axis=-1)
         # cols = ['sentence']
         # cols.extend([f"x{i}" for i in range(self.original_sentence_embeddings.shape[-1])])
-        # pd.DataFrame(app, columns=cols).to_csv("sentence_embeddings_no_fine_tuning.csv", index=False)
+        # pd.DataFrame(app, columns=cols).to_csv("SMALL_sentence_embeddings_no_fine_tuning.csv", index=False)
         if self.validate_umap:
             self._validate_umap(self.original_sentence_embeddings)
         print(f"\nStarting UMAP dimensionality reduction with args: \n"
