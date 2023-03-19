@@ -330,7 +330,7 @@ class ClusteringPipeline:
         sentence_embeddings = self.original_sentence_embeddings if sentence_embeddings is None else sentence_embeddings
         umap_params = self.umap_params
         umap_params['n_components'] = 2
-        bi_dim_umap_model = umap.UMAP(**umap_params)
+        bi_dim_umap_model = umap.UMAP(**umap_params, transform_seed=42)
         bidim_sentence_embeddings = bi_dim_umap_model.fit_transform(sentence_embeddings)
         sentence_embeddings_for_clustering = self.umap_model.transform(sentence_embeddings)
         predictions, probs = hdbscan.approximate_predict(self.hdbscan_model, sentence_embeddings_for_clustering)
