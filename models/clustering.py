@@ -18,6 +18,7 @@ from tqdm import tqdm
 import joblib
 import pandas as pd
 import plotly.express as px
+from scipy.cluster.hierarchy import cophenet
 
 LOCATION = '/tmp/joblib'
 SEED = 42
@@ -303,18 +304,13 @@ class ClusteringPipeline:
               f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\t(davies_bouldin_score): {davies_bouldin_score(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings, self.hdbscan_model.labels_)}"
+              f"\tCophenet coefficient: {cophenet(self.hdbscan_model.single_linkage_tree_.to_numpy())}"
               f"\n\n"
 
               f"Number of clusters: {len(set(self.hdbscan_model.labels_))}\n"
               f"Number of outliers: {sum(self.hdbscan_model.labels_ == -1)}"
               f"\n\n"
 
-              f"Evaluation on test data: TODO"
-              # f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.test_embeddings, test_labels)}"
-              # f"\t(davies_bouldin_score): {davies_bouldin_score(self.test_embeddings, test_labels)}"
-              # f"\tValidity index: {hdbscan.validity.validity_index(self.test_embeddings, test_labels)}"
-
-              f"\n\n"
               f"Note: \n"
               f"\tcalinski_harabasz_score: the larger the better.\n"
               f"\tdavies_bouldin_score: the lower the better.")
