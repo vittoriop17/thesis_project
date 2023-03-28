@@ -1,7 +1,7 @@
 import json
 import os
 import torch
-from sklearn.model_selection import RandomizedSearchCV, ParameterSampler
+from sklearn.model_selection import RandomizedSearchCV, ParameterGrid
 import hdbscan
 from sklearn.metrics import make_scorer
 import umap
@@ -68,7 +68,30 @@ def plot_analysis(df):
     df[df.score.isin(top_10_scores)]
 
 
+def get_hyperparameters(dictionary):
+    return [dictionary['min_cluster_size'],
+            dictionary['min_samples'],
+            dictionary['cluster_selection_method'],
+            dictionary['cluster_selection_epsilon'],
+            dictionary['metric']]
+
+
 class ClusteringPipeline:
+    class GridSearchResult:
+        def __init__(self, dictionary):
+            self.min_cluster_size = dictionary['min_cluster_size']
+            self.min_samples = dictionary['min_samples']
+            self.cluster_selection_method = dictionary['cluster_selection_method']
+            self.cluster_selection_epsilon = dictionary['cluster_selection_epsilon']
+            self.metric = dictionary['metric']
+            self.hyperparameters = get_hyperparameters(dictionary)
+            self.hash_value = hash(self.hyperparameters)
+            self.n_clusters = dictionary['n_clusters']
+            self.outliers = dictionary['outliers']
+            self.harmonic_mean = dictionary['harmonic_mean']
+            self.dbcv_score = dictionary['dbcv_score']
+            self.cophenet_score = dictionary['cophenet_score']
+
     def __init__(self, bi_encoder_path=None, training_sentences: list = None,
                  train_sentences_path=None, check_hopkins_test=False,
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
@@ -191,14 +214,15 @@ class ClusteringPipeline:
 
     def _load_partial_results(self):
         if self.validate_hdbscan:
-            self.existing_ids = []
+            self.hdbscan_validation_results = list()
             for filename in os.listdir(self.folder_results):
+                filepath = os.path.join(self.folder_results, filename)
                 try:
-                    mid = int(filename.strip())
-                    self.existing_ids.append(mid)
-                except:
-                    pass
-            print(f"\nFound {len(self.existing_ids)} experiments")
+                    dictionary = json.load(open(filepath, "r"))
+                    self.hdbscan_validation_results.append(self.GridSearchResult(dictionary))
+                except Exception as e:
+                    print(f"{e}")
+            print(f"\nFound {len(self.hdbscan_validation_results)} experiments")
 
     def _validate_umap(self, sentence_embeddings):
         print(f"Starting UMAP hyperparameters tuning (based on trustworthiness metric)...")
@@ -229,7 +253,7 @@ class ClusteringPipeline:
                 self.umap_params[k] = v
 
     def _prepare_evaluation(self, metric):
-        self.param_dist = {'min_samples': [2, 5, 10, 25, 50], 'min_cluster_size': [5, 10, 25, 50],
+        self.param_dist = {'min_samples': [1, 2, 5, 10, 25], 'min_cluster_size': [5, 10, 25, 50],
                            'cluster_selection_method': ['eom', 'leaf'], 'metric': [metric],
                            'cluster_selection_epsilon': [0.05, 0.1, 0.2],
                            'prediction_data': [True] if metric == 'euclidean' else [False], 'gen_min_span_tree': [True]}
@@ -264,21 +288,18 @@ class ClusteringPipeline:
         self._prepare_evaluation(metric)
         Y = pdist(self.training_embeddings, metric='cosine')  # condensed distance matrix
         X = self.training_embeddings if metric == 'euclidean' else self.cosine_similarity_matrix
-        n_iter_search = 30
-        # hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True, prediction_data=True, metric=metric)
-        best_validitiy_score = - np.inf
+        best_harmonic_score = - np.inf if len(self.hdbscan_validation_results) == 0 \
+            else max(list(map(lambda x: x['harmonic_mean'], self.hdbscan_validation_results)))
         best_params = {}
-        param_list = list(ParameterSampler(param_distributions=self.param_dist, n_iter=n_iter_search))
+        param_list = list(ParameterGrid(self.param_dist))
         for params in tqdm(param_list):
-            # params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
-            hdbscan_model = hdbscan.HDBSCAN(**params)
+            hdbscan_model = hdbscan.HDBSCAN(**params, memory=Memory(LOCATION, verbose=0))
             hdbscan_model.fit(X.astype('double'))
-            print(frozenset(params.items()))
-            mid = int(hash(frozenset(params.items())))
             # check if the current set of parameters has been already used
-            if mid in self.existing_ids:
+            if hash(get_hyperparameters(params)) in list(map(lambda x: x['hash_value'], self.hdbscan_validation_results)):
                 print(f"\033[93mSet of params already tested\n\33[30m\n")
                 continue
+
             print("\n---------------------------------------------------------\n")
             print(f"\nExperiment with params: {json.dumps(params, indent=2)}"
                   f"\nModel: {hdbscan_model}\n")
@@ -291,18 +312,18 @@ class ClusteringPipeline:
                   f"\tHarmonic mean: {harmonic_mean}"
                   f"\nN.Clusters: {len(set(hdbscan_model.labels_))}"
                   f"\nOutliers: {sum(hdbscan_model.labels_ == -1)}\n\33[30m")
-            if dbcv_score > best_validitiy_score:
-                best_validitiy_score = dbcv_score
+            if harmonic_mean > best_harmonic_score:
+                best_harmonic_score = harmonic_mean
                 best_params = params
             params['n_clusters'] = len(set(hdbscan_model.labels_))
             params['outliers'] = int(sum(hdbscan_model.labels_ == -1))
             params['dbcv_score'] = dbcv_score
             params['cophenet_score'] = cophenet_coeff
             params['harmonic_mean'] = harmonic_mean
-            self.save_partial_results_hdbscan(params, mid)
+            self.save_partial_results_hdbscan(params, hash(get_hyperparameters(params)))
             del hdbscan_model
         best_params.pop('memory', None)
-        print(f"\nDBCV dbcv_score :{best_validitiy_score}")
+        print(f"\nDBCV dbcv_score :{best_harmonic_score}")
         print(f"\nBest Parameters {best_params}")
         print(f"\nOverriding existing params with best params:"
               f"\n\nExisting params: \n\t{json.dumps(self.hdbscan_params, indent=4)}"
@@ -313,7 +334,7 @@ class ClusteringPipeline:
         best_params.pop('cophenet_score', None)
         best_params.pop('harmonic_mean', None)
         self.hdbscan_params = best_params
-        return best_validitiy_score
+        return best_harmonic_score
 
     def train_over_all_sentences(self):
         print(f"\nStarting hdbscan training over all sentences, "
