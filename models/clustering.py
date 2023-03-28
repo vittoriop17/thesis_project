@@ -289,14 +289,14 @@ class ClusteringPipeline:
         Y = pdist(self.training_embeddings, metric='cosine')  # condensed distance matrix
         X = self.training_embeddings if metric == 'euclidean' else self.cosine_similarity_matrix
         best_harmonic_score = - np.inf if len(self.hdbscan_validation_results) == 0 \
-            else max(list(map(lambda x: x['harmonic_mean'], self.hdbscan_validation_results)))
+            else max(list(map(lambda x: x.harmonic_mean, self.hdbscan_validation_results)))
         best_params = {}
         param_list = list(ParameterGrid(self.param_dist))
         for params in tqdm(param_list):
             hdbscan_model = hdbscan.HDBSCAN(**params, memory=Memory(LOCATION, verbose=0))
             hdbscan_model.fit(X.astype('double'))
             # check if the current set of parameters has been already used
-            if hash(str(get_hyperparameters(params))) in list(map(lambda x: x['hash_value'], self.hdbscan_validation_results)):
+            if hash(str(get_hyperparameters(params))) in list(map(lambda x: x.hash_value, self.hdbscan_validation_results)):
                 print(f"\033[93mSet of params already tested\n\33[30m\n")
                 continue
 
