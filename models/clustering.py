@@ -190,7 +190,10 @@ class ClusteringPipeline:
 
     def _reduce_embeddings(self):
         # self.training_embeddings may be valorized inside _read_sentences_and_embeddings
-        if self.original_sentence_embeddings is None and self.training_embeddings is None:
+        if self.training_embeddings is not None:
+            print(f"\nUMAP embeddings already loaded. No need to apply dimensionality reduction!")
+            return
+        if self.original_sentence_embeddings is None:
             print(f"\nOriginal sentence embeddings (before dim-reduction) will be produced with sBERT model...")
             # Load fine-tuned bi-encoder model
             self._load_model()  # self.sbert_model never used but in this situation
