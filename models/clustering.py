@@ -185,7 +185,7 @@ class ClusteringPipeline:
             self.n_components = n_dimensions
             self.training_embeddings = df_s_e[[f'{i}' for i in range(self.n_components)]].to_numpy()
             print(
-                f"Sentence-BERT embeddings after UMAP reduction loaded! "
+                f"UMAP embeddings loaded!"
                 f"Each sentence is represented as a {self.training_embeddings.shape[1]}-d vector\n\n")
 
     def _read_sentences_and_reduced_embeddings(self):
