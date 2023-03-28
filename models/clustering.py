@@ -245,14 +245,15 @@ class ClusteringPipeline:
 
     def evaluate(self):
         score_euclidean = self._evaluate_metric("euclidean")
+        # TODO - the HDBSCAN fitting with precomputed matrix doesn't work!!!! Experiments will be done with euc dis only
         # score_euclidean = 0
-        best_params_euclidean = self.hdbscan_params
-        score_precomputed = self._evaluate_metric("precomputed")
-        best_metric = 'precomputed'
-        if score_euclidean > score_precomputed:
-            self.hdbscan_params = best_params_euclidean
-            best_metric = 'euclidean'
-        print(f"Best metric: {best_metric}")
+        # best_params_euclidean = self.hdbscan_params
+        # score_precomputed = self._evaluate_metric("precomputed")
+        # best_metric = 'precomputed'
+        # if score_euclidean > score_precomputed:
+        #     self.hdbscan_params = best_params_euclidean
+        #     best_metric = 'euclidean'
+        # print(f"Best metric: {best_metric}")
         print(f"Final set of parameters: "
               f"\n\t{json.dumps(self.hdbscan_params, indent=4)}")
 
@@ -272,6 +273,7 @@ class ClusteringPipeline:
             # params['memory'] = Memory(LOCATION, verbose=0)  # Speed up computation
             hdbscan_model = hdbscan.HDBSCAN(**params)
             hdbscan_model.fit(X.astype('double'))
+            print(frozenset(params.items()))
             mid = int(hash(frozenset(params.items())))
             # check if the current set of parameters has been already used
             if mid in self.existing_ids:
@@ -296,6 +298,7 @@ class ClusteringPipeline:
             params['outliers'] = int(sum(hdbscan_model.labels_ == -1))
             params['dbcv_score'] = dbcv_score
             params['cophenet_score'] = cophenet_coeff
+            params['harmonic_mean'] = harmonic_mean
             self.save_partial_results_hdbscan(params, mid)
             del hdbscan_model
         best_params.pop('memory', None)
@@ -308,6 +311,7 @@ class ClusteringPipeline:
         best_params.pop('outliers', None)
         best_params.pop('dbcv_score', None)
         best_params.pop('cophenet_score', None)
+        best_params.pop('harmonic_mean', None)
         self.hdbscan_params = best_params
         return best_validitiy_score
 
