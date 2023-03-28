@@ -270,7 +270,7 @@ class ClusteringPipeline:
                            'cluster_selection_method': ['eom', 'leaf'], 'metric': [metric],
                            'cluster_selection_epsilon': [0.05, 0.1, 0.2],
                            'prediction_data': [True] if metric == 'euclidean' else [False], 'gen_min_span_tree': [True]}
-        self.cosine_similarity_matrix = cosine_similarity(self.training_embeddings)
+        self.cosine_similarity_matrix = cosine_similarity(self.training_embeddings) if metric != 'euclidean' else None
 
     def _check_hopkins(self):
         if self.check_hopkins_test:
@@ -306,16 +306,14 @@ class ClusteringPipeline:
         best_params = {}
         param_list = list(ParameterGrid(self.param_dist))
         for params in tqdm(param_list):
-            hdbscan_model = hdbscan.HDBSCAN(**params, memory=Memory(LOCATION, verbose=0))
-            hdbscan_model.fit(X.astype('double'))
             # check if the current set of parameters has been already used
             if hash(str(get_hyperparameters(params))) in list(map(lambda x: x.hash_value, self.hdbscan_validation_results)):
                 print(f"\033[93mSet of params already tested\n\33[30m\n")
                 continue
-
+            hdbscan_model = hdbscan.HDBSCAN(**params, memory=Memory(LOCATION, verbose=0))
+            hdbscan_model.fit(X.astype('double'))
             print("\n---------------------------------------------------------\n")
-            print(f"\nExperiment with params: {json.dumps(params, indent=2)}"
-                  f"\nModel: {hdbscan_model}\n")
+            print(f"\nExperiment with params: {json.dumps(params, indent=2)}\nModel: {hdbscan_model}\n")
             dbcv_score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric,
                                                          d=self.umap_params['n_components'])
 
