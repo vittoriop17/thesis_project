@@ -26,6 +26,13 @@ LOCATION = '/tmp/joblib'
 SEED = 42
 
 
+def harmonic_mean_cophenet_and_dbcv(cophenet, dbcv):
+    assert -1 <= cophenet <= 1, f"Invalid cophenet coefficient. Must be between -1 and 1. Found: {cophenet}"
+    assert -1 <= dbcv <= 1, f"Invalid dbcv score. Must be between -1 and 1. Found: {dbcv}"
+    cophenet = (cophenet + 1) / 2
+    dbcv = (dbcv + 1) / 2
+    return (2*dbcv*cophenet)/(dbcv+cophenet)
+
 def validity_index_score(estimator, X_test):
     # work-around
     X_train = estimator.prediction_data_.raw_data if estimator.metric != 'precomputed' else X_test
@@ -265,7 +272,7 @@ class ClusteringPipeline:
                                                          d=self.umap_params['n_components'])
 
             cophenet_coeff, _ = cophenet(hdbscan_model.single_linkage_tree_.to_numpy(), Y)
-            harmonic_mean = 2*dbcv_score*cophenet_coeff/(dbcv_score+cophenet_coeff)
+            harmonic_mean = harmonic_mean_cophenet_and_dbcv(cophenet_coeff, dbcv_score)
             print(f"\033[94mDBCV Score {dbcv_score}, \t Cophenet coefficient: {cophenet_coeff}"
                   f"\tHarmonic mean: {harmonic_mean}"
                   f"\nN.Clusters: {len(set(hdbscan_model.labels_))}"
