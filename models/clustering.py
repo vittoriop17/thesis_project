@@ -314,6 +314,9 @@ class ClusteringPipeline:
             hdbscan_model.fit(X.astype('double'))
             print("\n---------------------------------------------------------\n")
             print(f"\nExperiment with params: {json.dumps(params, indent=2)}\nModel: {hdbscan_model}\n")
+            if len(set(hdbscan_model.labels_)) < 5:  # n_clusters
+                print(f"\nNumber of clusters too low: {len(set(hdbscan_model.labels_))}\n")
+                continue
             dbcv_score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric,
                                                          d=self.umap_params['n_components'])
 
