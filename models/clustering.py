@@ -163,12 +163,15 @@ class ClusteringPipeline:
             self.original_sentence_embeddings = self.sbert_model.encode(self.training_sentences)
             print(f"...embeddings produced\n")
             if self.save_embeddings is not None:
+                print(f"\nSaving embeddings...")
                 columns = ['sentence']
                 columns.extend([idx for idx in range(768)])
                 pd.DataFrame(
                     np.concatenate(
                         (np.reshape(self.training_sentences, (-1, 1)), self.original_sentence_embeddings), axis=-1))\
                     .to_csv(self.save_embeddings, index=None, columns=columns)
+                print("...Embeddings saved!")
+            del self.sbert_model
         # app = np.concatenate([np.array(sentences).reshape(-1, 1),
         #                       self.original_sentence_embeddings.reshape(len(sentences), -1)
         #                       ], axis=-1)
