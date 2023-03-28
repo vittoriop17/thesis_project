@@ -176,8 +176,17 @@ class ClusteringPipeline:
         print(f"\n\nLoading training sentences and training embeddings from {self.embeddings_path}")
         df_s_e = pd.read_csv(self.embeddings_path)
         self.training_sentences = df_s_e['sentence'].to_numpy()
-        self.original_sentence_embeddings = df_s_e[[f'{i}' for i in range(768)]].to_numpy()
-        print(f"Embeddings loaded!\n\n")
+        n_dimensions = len(df_s_e.columns) - 1
+        if n_dimensions == 768:
+            self.original_sentence_embeddings = df_s_e[[f"{i}" for i in range(n_dimensions)]].to_numpy()
+            print(f"Sentence-BERT embeddings loaded!\n\n")
+        else:
+            print(f"\n---FOUND EMBEDDINGS AFTER UMAP (n_components={n_dimensions})---")
+            self.n_components = n_dimensions
+            self.training_embeddings = df_s_e[[f'{i}' for i in range(self.n_components)]].to_numpy()
+            print(
+                f"Sentence-BERT embeddings after UMAP reduction loaded! "
+                f"Each sentence is represented as a {self.training_embeddings.shape[1]}-d vector\n\n")
 
     def _read_sentences_and_reduced_embeddings(self):
         print(f"\n\nLoading training sentences and training embeddings (after UMAP) from {self.embeddings_path}")
@@ -185,7 +194,7 @@ class ClusteringPipeline:
         self.training_sentences = df_s_e['sentence'].to_numpy()
         print(f"\nOverriding n_components (={self.n_components})\n")
         self.n_components = len(df_s_e.columns) - 1
-        self.training_embeddings = df_s_e[[f'{i}' for i in range()]].to_numpy()
+        self.training_embeddings = df_s_e[[f'{i}' for i in range(self.n_components)]].to_numpy()
         print(f"Embeddings loaded! Each sentence is represented as a {self.training_embeddings.shape[1]}-d vector\n\n")
 
     def _reduce_embeddings(self):
