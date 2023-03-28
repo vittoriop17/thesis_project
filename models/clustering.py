@@ -19,6 +19,8 @@ import joblib
 import pandas as pd
 import plotly.express as px
 from scipy.cluster.hierarchy import cophenet
+from scipy.spatial.distance import pdist
+
 
 LOCATION = '/tmp/joblib'
 SEED = 42
@@ -226,12 +228,10 @@ class ClusteringPipeline:
         score_euclidean = self._evaluate_metric("euclidean")
         # score_euclidean = 0
         best_params_euclidean = self.hdbscan_params
-        best_hdbscan_model = self.hdbscan_model
         score_precomputed = self._evaluate_metric("precomputed")
         best_metric = 'precomputed'
         if score_euclidean > score_precomputed:
             self.hdbscan_params = best_params_euclidean
-            self.hdbscan_model = best_hdbscan_model
             best_metric = 'euclidean'
         print(f"Best metric: {best_metric}")
         print(f"Final set of parameters: "
@@ -242,8 +242,9 @@ class ClusteringPipeline:
         assert metric in ['euclidean', 'precomputed'], f"Invalid metric! Must be euclidean or precomputed"
         print(f"Starting evaluation with DBCV strategy. Using {str(metric).upper()} as distance metric\n")
         self._prepare_evaluation(metric)
+        Y = pdist(self.training_embeddings, metric='cosine')  # condensed distance matrix
         X = self.training_embeddings if metric == 'euclidean' else self.cosine_similarity_matrix
-        n_iter_search = 40
+        n_iter_search = 30
         # hdbscan_model = hdbscan.HDBSCAN(gen_min_span_tree=True, prediction_data=True, metric=metric)
         best_validitiy_score = - np.inf
         best_params = {}
@@ -260,30 +261,35 @@ class ClusteringPipeline:
             print("\n---------------------------------------------------------\n")
             print(f"\nExperiment with params: {json.dumps(params, indent=2)}"
                   f"\nModel: {hdbscan_model}\n")
-            score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric,
-                                                    d=self.umap_params['n_components'])
-            print(f"\033[94mScore {score}"
+            dbcv_score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric,
+                                                         d=self.umap_params['n_components'])
+
+            cophenet_coeff, _ = cophenet(hdbscan_model.single_linkage_tree_.to_numpy(), Y)
+            harmonic_mean = 2*dbcv_score*cophenet_coeff/(dbcv_score+cophenet_coeff)
+            print(f"\033[94mDBCV Score {dbcv_score}, \t Cophenet coefficient: {cophenet_coeff}"
+                  f"\tHarmonic mean: {harmonic_mean}"
                   f"\nN.Clusters: {len(set(hdbscan_model.labels_))}"
                   f"\nOutliers: {sum(hdbscan_model.labels_ == -1)}\n\33[30m")
-            if score > best_validitiy_score:
-                best_validitiy_score = score
+            if dbcv_score > best_validitiy_score:
+                best_validitiy_score = dbcv_score
                 best_params = params
             params['n_clusters'] = len(set(hdbscan_model.labels_))
             params['outliers'] = int(sum(hdbscan_model.labels_ == -1))
-            params['score'] = score
+            params['dbcv_score'] = dbcv_score
+            params['cophenet_score'] = cophenet_coeff
             self.save_partial_results_hdbscan(params, mid)
             del hdbscan_model
         best_params.pop('memory', None)
-        print(f"\nDBCV score :{best_validitiy_score}")
+        print(f"\nDBCV dbcv_score :{best_validitiy_score}")
         print(f"\nBest Parameters {best_params}")
         print(f"\nOverriding existing params with best params:"
               f"\n\nExisting params: \n\t{json.dumps(self.hdbscan_params, indent=4)}"
               f"\n\nNew params (best params after random grid search): \n\t{json.dumps(best_params, indent=4)}")
         best_params.pop('n_clusters', None)
         best_params.pop('outliers', None)
-        best_params.pop('score', None)
+        best_params.pop('dbcv_score', None)
+        best_params.pop('cophenet_score', None)
         self.hdbscan_params = best_params
-        self.hdbscan_model = None
         return best_validitiy_score
 
     def train_over_all_sentences(self):
@@ -296,6 +302,8 @@ class ClusteringPipeline:
         if self.hdbscan_model is None:
             self.hdbscan_model = hdbscan.HDBSCAN(prediction_data=True, **self.hdbscan_params)
         self.hdbscan_model.fit(X)
+        Y = pdist(X, metric='cosine')  # condensed distance matrix
+        cophenet_coeff, _ = cophenet(self.hdbscan_model.single_linkage_tree_.to_numpy(), Y)
         # test_labels, _ = hdbscan.approximate_predict(self.hdbscan_model, self.test_sentences)
         # Drawbacks
         # The Calinski-Harabasz AND davies_bouldin_score index is generally higher for convex clusters than other concepts of clusters,
@@ -304,7 +312,7 @@ class ClusteringPipeline:
               f"\t(calinski_harabasz_score): {calinski_harabasz_score(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\t(davies_bouldin_score): {davies_bouldin_score(self.training_embeddings, self.hdbscan_model.labels_)}"
               f"\tValidity index: {hdbscan.validity.validity_index(self.training_embeddings, self.hdbscan_model.labels_)}"
-              f"\tCophenet coefficient: {cophenet(self.hdbscan_model.single_linkage_tree_.to_numpy())}"
+              f"\tCophenet coefficient: {cophenet_coeff}"
               f"\n\n"
 
               f"Number of clusters: {len(set(self.hdbscan_model.labels_))}\n"
