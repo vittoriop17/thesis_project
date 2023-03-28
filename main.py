@@ -10,7 +10,7 @@ import umap
 
 def main(args):
     if args.no_fine_tuning:
-        clustering_pipe = clustering.ClusteringPipeline(**vars(args), save_embeddings="D:\\UNIVERSITA\KTH\\THESIS\\ProjectCode\\data\\DISNEY\\sentence_embeddings_fine_tuning.csv")
+        clustering_pipe = clustering.ClusteringPipeline(**vars(args))
         clustering_pipe.train_over_all_sentences()
         clustering_pipe.plot_clusters()
         clustering_pipe.plot_analysis()

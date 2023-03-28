@@ -21,7 +21,6 @@ import plotly.express as px
 from scipy.cluster.hierarchy import cophenet
 from scipy.spatial.distance import pdist
 
-
 LOCATION = '/tmp/joblib'
 SEED = 42
 
@@ -31,7 +30,8 @@ def harmonic_mean_cophenet_and_dbcv(cophenet, dbcv):
     assert -1 <= dbcv <= 1, f"Invalid dbcv score. Must be between -1 and 1. Found: {dbcv}"
     cophenet = (cophenet + 1) / 2
     dbcv = (dbcv + 1) / 2
-    return (2*dbcv*cophenet)/(dbcv+cophenet)
+    return (2 * dbcv * cophenet) / (dbcv + cophenet)
+
 
 def validity_index_score(estimator, X_test):
     # work-around
@@ -123,7 +123,8 @@ class ClusteringPipeline:
             self.evaluate()
 
     def _sanity_check(self):
-        assert os.path.exists(self.bi_encoder_path) or self.bi_encoder_path=='bert-base-uncased' if self.bi_encoder_path is not None else True,\
+        assert os.path.exists(
+            self.bi_encoder_path) or self.bi_encoder_path == 'bert-base-uncased' if self.bi_encoder_path is not None else True, \
             f"Invalid path for bi_encoder model. Passed value: {self.bi_encoder_path}"
         assert self.path_training_sentences is not None if self.training_sentences is None else True, \
             f"Must provide a path to training sentences if training sentences are not provided"
@@ -166,10 +167,10 @@ class ClusteringPipeline:
                 print(f"\nSaving embeddings...")
                 columns = ['sentence']
                 columns.extend([idx for idx in range(768)])
-                pd.DataFrame(
-                    np.concatenate(
-                        (np.reshape(self.training_sentences, (-1, 1)), self.original_sentence_embeddings), axis=-1))\
-                    .to_csv(self.save_embeddings, index=None, columns=columns)
+                app = np.concatenate([np.array(self.training_sentences).reshape(-1, 1),
+                                      self.original_sentence_embeddings.reshape(len(self.training_sentences), -1)
+                                      ], axis=-1, dtype=object)
+                pd.DataFrame(app, columns=columns).to_csv(self.save_embeddings, index=None, columns=columns)
                 print("...Embeddings saved!")
             del self.sbert_model
         # app = np.concatenate([np.array(sentences).reshape(-1, 1),
@@ -312,7 +313,7 @@ class ClusteringPipeline:
 
     def train_over_all_sentences(self):
         print(f"\nStarting hdbscan training over all sentences, "
-              f"with {self.hdbscan_params['metric']+' distance metric' if self.hdbscan_params['metric'] != ' precomputed' else 'precomputed cosine similarity matrix'}...")
+              f"with {self.hdbscan_params['metric'] + ' distance metric' if self.hdbscan_params['metric'] != ' precomputed' else 'precomputed cosine similarity matrix'}...")
         print(f"HDBSCAN model parameters: \n"
               f"\t{json.dumps(self.hdbscan_params, indent=4)}")
         X = cosine_similarity(self.training_embeddings) if self.hdbscan_params['metric'] == 'precomputed' \
@@ -394,7 +395,8 @@ class ClusteringPipeline:
              predictions_wo_outliers.reshape(-1, 1),
              probs[predictions != 0].reshape(-1, 1).astype('float')
              ], axis=1)
-        df = pd.DataFrame(x1_x2_sentence_cluster_wo_outliers, columns=['x1', 'x2', 'sentence', 'cluster', 'probability'])
+        df = pd.DataFrame(x1_x2_sentence_cluster_wo_outliers,
+                          columns=['x1', 'x2', 'sentence', 'cluster', 'probability'])
         for col_name in float_columns:
             df[col_name] = df[col_name].astype(float)
         scatter_with_sentences(df, "plotly_sentences_wo_outliers.html")
