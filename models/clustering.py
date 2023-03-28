@@ -74,7 +74,7 @@ class ClusteringPipeline:
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
                  hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean',
                  hdbscan_cluster_method='eom', validate_hdbscan=False,
-                 hdbscan_epsilon=0.2, folder_results=os.path.join("results", "HDBSCAN"),
+                 hdbscan_epsilon=0.2, folder_results=os.path.join("results", "HDBSCAN"), save_embeddings=None,
                  embeddings_path=None, **kwargs):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
@@ -84,6 +84,7 @@ class ClusteringPipeline:
         self.validate_hdbscan = validate_hdbscan
         self.hdbscan_model = None
         self.original_sentence_embeddings = None
+        self.save_embeddings = save_embeddings
         self.folder_results = folder_results
         self.umap_params = {'metric': umap_metric,
                             'n_components': self.n_components,
@@ -161,6 +162,13 @@ class ClusteringPipeline:
             self._load_model()  # self.sbert_model never used but in this situation
             self.original_sentence_embeddings = self.sbert_model.encode(self.training_sentences)
             print(f"...embeddings produced\n")
+            if self.save_embeddings is not None:
+                columns = ['sentence']
+                columns.extend([idx for idx in range(768)])
+                pd.DataFrame(
+                    np.concatenate(
+                        (np.reshape(self.training_sentences, (-1, 1)), self.original_sentence_embeddings), axis=-1))\
+                    .to_csv(self.save_embeddings, index=None, columns=columns)
         # app = np.concatenate([np.array(sentences).reshape(-1, 1),
         #                       self.original_sentence_embeddings.reshape(len(sentences), -1)
         #                       ], axis=-1)
