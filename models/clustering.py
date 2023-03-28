@@ -188,17 +188,9 @@ class ClusteringPipeline:
                 f"UMAP embeddings loaded!"
                 f"Each sentence is represented as a {self.training_embeddings.shape[1]}-d vector\n\n")
 
-    def _read_sentences_and_reduced_embeddings(self):
-        print(f"\n\nLoading training sentences and training embeddings (after UMAP) from {self.embeddings_path}")
-        df_s_e = pd.read_csv(self.embeddings_path)
-        self.training_sentences = df_s_e['sentence'].to_numpy()
-        print(f"\nOverriding n_components (={self.n_components})\n")
-        self.n_components = len(df_s_e.columns) - 1
-        self.training_embeddings = df_s_e[[f'{i}' for i in range(self.n_components)]].to_numpy()
-        print(f"Embeddings loaded! Each sentence is represented as a {self.training_embeddings.shape[1]}-d vector\n\n")
-
     def _reduce_embeddings(self):
-        if self.original_sentence_embeddings is None:
+        # self.training_embeddings may be valorized inside _read_sentences_and_embeddings
+        if self.original_sentence_embeddings is None and self.training_embeddings is None:
             print(f"\nOriginal sentence embeddings (before dim-reduction) will be produced with sBERT model...")
             # Load fine-tuned bi-encoder model
             self._load_model()  # self.sbert_model never used but in this situation
