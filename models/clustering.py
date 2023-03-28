@@ -179,6 +179,15 @@ class ClusteringPipeline:
         self.original_sentence_embeddings = df_s_e[[f'{i}' for i in range(768)]].to_numpy()
         print(f"Embeddings loaded!\n\n")
 
+    def _read_sentences_and_reduced_embeddings(self):
+        print(f"\n\nLoading training sentences and training embeddings (after UMAP) from {self.embeddings_path}")
+        df_s_e = pd.read_csv(self.embeddings_path)
+        self.training_sentences = df_s_e['sentence'].to_numpy()
+        print(f"\nOverriding n_components (={self.n_components})\n")
+        self.n_components = len(df_s_e.columns) - 1
+        self.training_embeddings = df_s_e[[f'{i}' for i in range()]].to_numpy()
+        print(f"Embeddings loaded! Each sentence is represented as a {self.training_embeddings.shape[1]}-d vector\n\n")
+
     def _reduce_embeddings(self):
         if self.original_sentence_embeddings is None:
             print(f"\nOriginal sentence embeddings (before dim-reduction) will be produced with sBERT model...")
@@ -375,7 +384,7 @@ class ClusteringPipeline:
         # N.b.: the HDBSCAN algorithm is applied to the sentence embedding in a N-dimensional space.
         # then, the cluster information is used to plot the datapoints in a 2-dimensional space.
         # thus, be aware that the data for HDBSCAN and the data used for visualization lie in two different spaces!
-        sentence_embeddings = self.original_sentence_embeddings if sentence_embeddings is None else sentence_embeddings
+        sentence_embeddings = self.training_embeddings if sentence_embeddings is None else sentence_embeddings
         umap_params = self.umap_params
         umap_params['n_components'] = 2
         bi_dim_umap_model = umap.UMAP(**umap_params, transform_seed=42)
