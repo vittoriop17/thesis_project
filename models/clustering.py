@@ -229,7 +229,7 @@ class ClusteringPipeline:
                 self.umap_params[k] = v
 
     def _prepare_evaluation(self, metric):
-        self.param_dist = {'min_samples': [1, 2, 5, 10, 25, 50], 'min_cluster_size': [5, 10, 25, 50],
+        self.param_dist = {'min_samples': [2, 5, 10, 25, 50], 'min_cluster_size': [5, 10, 25, 50],
                            'cluster_selection_method': ['eom', 'leaf'], 'metric': [metric],
                            'cluster_selection_epsilon': [0.05, 0.1, 0.2],
                            'prediction_data': [True] if metric == 'euclidean' else [False], 'gen_min_span_tree': [True]}
@@ -404,6 +404,7 @@ class ClusteringPipeline:
         for col_name in float_columns:
             df[col_name] = df[col_name].astype(float)
         scatter_with_sentences(df, "plotly_sentences_wo_outliers.html")
+        self.plot_probability_boxplot(df)
 
     def plot_analysis(self):
         # self.hdbscan_model.single_linkage_tree_.plot()
@@ -411,6 +412,17 @@ class ClusteringPipeline:
         self.hdbscan_model.condensed_tree_.plot(select_clusters=True,
                                                 selection_palette=sns.color_palette('deep', 8))
         plt.savefig("condensed_tree.png", bbox_inches='tight')
+
+    def plot_probability_boxplot(self, df):
+        # df = pd.DataFrame(x1_x2_sentence_cluster_wo_outliers,
+        #                   columns=['x1', 'x2', 'sentence', 'cluster', 'probability'])
+        cluster_ids = sorted(set(df.cluster))
+        data = [df[df['cluster'] == cluster_id]['probability'] for cluster_id in cluster_ids]
+        plt.boxplot(data)
+        plt.title("Sentence probability membership by cluster")
+        plt.xlabel("Cluster")
+        plt.ylabel("Probability")
+        plt.savefig("probability_boxplot.png", bbox_inches='tight')
 
     def plot_cluster_dist(self, cluster_preds):
         bars, height = np.unique(cluster_preds, return_counts=True)
