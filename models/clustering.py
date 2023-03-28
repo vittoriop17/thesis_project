@@ -85,7 +85,7 @@ class ClusteringPipeline:
             self.cluster_selection_epsilon = dictionary['cluster_selection_epsilon']
             self.metric = dictionary['metric']
             self.hyperparameters = get_hyperparameters(dictionary)
-            self.hash_value = hash(self.hyperparameters)
+            self.hash_value = hash(str(self.hyperparameters))
             self.n_clusters = dictionary['n_clusters']
             self.outliers = dictionary['outliers']
             self.harmonic_mean = dictionary['harmonic_mean']
@@ -296,7 +296,7 @@ class ClusteringPipeline:
             hdbscan_model = hdbscan.HDBSCAN(**params, memory=Memory(LOCATION, verbose=0))
             hdbscan_model.fit(X.astype('double'))
             # check if the current set of parameters has been already used
-            if hash(get_hyperparameters(params)) in list(map(lambda x: x['hash_value'], self.hdbscan_validation_results)):
+            if hash(list(get_hyperparameters(params))) in list(map(lambda x: x['hash_value'], self.hdbscan_validation_results)):
                 print(f"\033[93mSet of params already tested\n\33[30m\n")
                 continue
 
@@ -320,7 +320,7 @@ class ClusteringPipeline:
             params['dbcv_score'] = dbcv_score
             params['cophenet_score'] = cophenet_coeff
             params['harmonic_mean'] = harmonic_mean
-            self.save_partial_results_hdbscan(params, hash(get_hyperparameters(params)))
+            self.save_partial_results_hdbscan(params, hash(list(get_hyperparameters(params))))
             del hdbscan_model
         best_params.pop('memory', None)
         print(f"\nDBCV dbcv_score :{best_harmonic_score}")
