@@ -91,6 +91,11 @@ class ClusteringPipeline:
             self.harmonic_mean = dictionary['harmonic_mean']
             self.dbcv_score = dictionary['dbcv_score']
             self.cophenet_score = dictionary['cophenet_score']
+            self.dictionary = dictionary
+
+        def __call__(self, *args, **kwargs):
+            return self.dictionary
+
 
     def __init__(self, bi_encoder_path=None, training_sentences: list = None,
                  train_sentences_path=None, check_hopkins_test=False,
@@ -303,9 +308,11 @@ class ClusteringPipeline:
         self._prepare_evaluation(metric)
         Y = pdist(self.training_embeddings, metric='cosine')  # condensed distance matrix
         X = self.training_embeddings if metric == 'euclidean' else self.cosine_similarity_matrix
+        best_harmonic_score_idx = np.argmax(list(map(lambda x: x.harmonic_mean, self.hdbscan_validation_results)))
         best_harmonic_score = - np.inf if len(self.hdbscan_validation_results) == 0 \
-            else max(list(map(lambda x: x.harmonic_mean, self.hdbscan_validation_results)))
-        best_params = {}
+            else self.hdbscan_validation_results[best_harmonic_score_idx]()['harmonic_score']
+        best_params = {} if len(self.hdbscan_validation_results) == 0 \
+            else self.hdbscan_validation_results[best_harmonic_score_idx]()
         param_list = list(ParameterGrid(self.param_dist))
         for params in tqdm(param_list):
             # check if the current set of parameters has been already used
@@ -338,8 +345,7 @@ class ClusteringPipeline:
             params['harmonic_mean'] = harmonic_mean
             self.save_partial_results_hdbscan(params, hash(str(get_hyperparameters(params))))
             del hdbscan_model
-        best_params.pop('memory', None)
-        print(f"\nDBCV dbcv_score :{best_harmonic_score}")
+        print(f"\nBest harmonic score :{best_harmonic_score}")
         print(f"\nBest Parameters {best_params}")
         print(f"\nOverriding existing params with best params:"
               f"\n\nExisting params: \n\t{json.dumps(self.hdbscan_params, indent=4)}"
