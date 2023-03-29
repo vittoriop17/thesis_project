@@ -366,7 +366,8 @@ class ClusteringPipeline:
         X = cosine_similarity(self.training_embeddings) if self.hdbscan_params['metric'] == 'precomputed' \
             else self.training_embeddings
         if self.hdbscan_model is None:
-            self.hdbscan_model = hdbscan.HDBSCAN(prediction_data=True, **self.hdbscan_params)
+            self.hdbscan_params['prediction_data'] = True if self.hdbscan_params['metric'] != 'precomputed' else False
+            self.hdbscan_model = hdbscan.HDBSCAN(**self.hdbscan_params)
         self.hdbscan_model.fit(X)
         Y = pdist(X, metric='cosine')  # condensed distance matrix
         cophenet_coeff, _ = cophenet(self.hdbscan_model.single_linkage_tree_.to_numpy(), Y)
