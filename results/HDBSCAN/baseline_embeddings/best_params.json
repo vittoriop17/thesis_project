@@ -1,0 +1,9 @@
+{
+    "cluster_selection_epsilon": 0.05,
+    "cluster_selection_method": "leaf",
+    "gen_min_span_tree": true,
+    "metric": "euclidean",
+    "min_cluster_size": 50,
+    "min_samples": 25,
+    "prediction_data": true
+}
