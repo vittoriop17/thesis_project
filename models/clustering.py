@@ -125,6 +125,9 @@ class ClusteringPipeline:
                                'metric': hdbscan_metric,
                                'cluster_selection_method': hdbscan_cluster_method,
                                'cluster_selection_epsilon': hdbscan_epsilon}
+        self.hdbscan_params = json.load(open(os.path.join(self.folder_results, "best_params.json"))) \
+            if not self.validate_hdbscan and os.path.exists(os.path.join(self.folder_results, "best_params.json")) \
+            else self.hdbscan_params
         # if training_sentences is not empty, the variable path_training_sentences is not used
         self.training_sentences = training_sentences
         self.path_training_sentences = train_sentences_path
