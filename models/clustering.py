@@ -97,8 +97,8 @@ class ClusteringPipeline:
                  validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
                  hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean',
                  hdbscan_cluster_method='eom', validate_hdbscan=False,
-                 hdbscan_epsilon=0.2, folder_results=os.path.join("results", "HDBSCAN"), save_embeddings=None,
-                 embeddings_path=None, **kwargs):
+                 hdbscan_epsilon=0.2, save_embeddings=None,
+                 embeddings_path=None, model_type=Literal['baseline', 'finetuned'], **kwargs):
         # Set variables
         self.bi_encoder_path = bi_encoder_path
         self.n_components = n_components
@@ -108,7 +108,9 @@ class ClusteringPipeline:
         self.hdbscan_model = None
         self.original_sentence_embeddings = None
         self.save_embeddings = save_embeddings
-        self.folder_results = folder_results
+        self.folder_results = os.path.join("results", "HDBSCAN", "finetuned_embeddings") if model_type=='finetuned' \
+            else os.path.join("results", "HDBSCAN", "baseline_embeddings")
+        self.model_type = model_type
         self.umap_params = {'metric': umap_metric,
                             'n_components': self.n_components,
                             'min_dist': umap_min_dist,

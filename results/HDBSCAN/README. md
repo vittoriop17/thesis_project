@@ -1,0 +1,5 @@
+# Folder description:
+1. baseline_embeddings: contains the hdbscan results obtained using the embeddings extracted via sentence-BERT
+    without fine funing;
+2. finetuned_embeddings: contains the hdbscan results obtained using the embeddings extracted via sentence-BERT
+    with fine-tuning;
