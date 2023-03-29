@@ -465,6 +465,7 @@ class ClusteringPipeline:
         # df = pd.DataFrame(x1_x2_sentence_cluster_wo_outliers,
         #                   columns=['x1', 'x2', 'sentence', 'cluster', 'probability'])
         cluster_ids = sorted(set(df.cluster))
+        plt.xticks(cluster_ids, cluster_ids, rotation=45, fontsize=6)
         data = [df[df['cluster'] == cluster_id]['probability'] for cluster_id in cluster_ids]
         plt.boxplot(data)
         plt.title("Sentence probability membership by cluster")
