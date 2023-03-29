@@ -312,7 +312,8 @@ class ClusteringPipeline:
         self._prepare_evaluation(metric)
         Y = pdist(self.training_embeddings, metric='cosine')  # condensed distance matrix
         X = self.training_embeddings if metric == 'euclidean' else self.cosine_similarity_matrix
-        best_harmonic_score_idx = np.argmax(list(map(lambda x: x.harmonic_mean, self.hdbscan_validation_results)))
+        best_harmonic_score_idx = np.argmax(list(map(lambda x: x.harmonic_mean, self.hdbscan_validation_results))) \
+            if len(self.hdbscan_validation_results) != 0 else -1
         best_harmonic_score = - np.inf if len(self.hdbscan_validation_results) == 0 \
             else self.hdbscan_validation_results[best_harmonic_score_idx]()['harmonic_mean']
         best_params = {} if len(self.hdbscan_validation_results) == 0 \
