@@ -273,7 +273,7 @@ class ClusteringPipeline:
                 self.umap_params[k] = v
 
     def _prepare_evaluation(self, metric):
-        self.param_dist = {'min_samples': [2, 5, 10, 25], 'min_cluster_size': [5, 10, 25, 50],
+        self.param_dist = {'min_samples': [2, 5, 10, 25, 50], 'min_cluster_size': [5, 10, 25, 50],
                            'cluster_selection_method': ['eom', 'leaf'], 'metric': [metric],
                            'cluster_selection_epsilon': [0.05, 0.1, 0.2],
                            'prediction_data': [True] if metric == 'euclidean' else [False], 'gen_min_span_tree': [True]}
@@ -403,8 +403,7 @@ class ClusteringPipeline:
         umap_params['n_components'] = 2
         bi_dim_umap_model = umap.UMAP(**umap_params, transform_seed=42)
         bidim_sentence_embeddings = bi_dim_umap_model.fit_transform(sentence_embeddings)
-        sentence_embeddings_for_clustering = self.umap_model.transform(sentence_embeddings)
-        predictions, probs = hdbscan.approximate_predict(self.hdbscan_model, sentence_embeddings_for_clustering)
+        predictions, probs = hdbscan.approximate_predict(self.hdbscan_model, sentence_embeddings)
         print(predictions)
         predictions = np.array(predictions).astype('int') + 1
         self.plot_cluster_dist(predictions)
