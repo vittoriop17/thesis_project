@@ -20,9 +20,20 @@ import pandas as pd
 import plotly.express as px
 from scipy.cluster.hierarchy import cophenet
 from scipy.spatial.distance import pdist
+import seaborn as sns
 
 LOCATION = '/tmp/joblib'
 SEED = 42
+
+
+def plot_clustering_results(folder_results, hyperparam='min_cluster_size', metric='harmonic_mean'):
+    df = get_clustering_results(folder_results)
+    sns.violinplot(df, x=hyperparam, y=metric, hue='cluster_selection_method')
+    plt.xlabel(hyperparam)
+    plt.ylabel(metric)
+    plt.title(f"{metric} violinplot for {hyperparam} hyperparam")
+    plt.grid(True)
+    plt.show()
 
 
 def harmonic_mean_cophenet_and_dbcv(cophenet, dbcv):
@@ -277,7 +288,7 @@ class ClusteringPipeline:
                 self.umap_params[k] = v
 
     def _prepare_evaluation(self, metric):
-        self.param_dist = {'min_samples': [2, 5, 10, 25, 50], 'min_cluster_size': [5, 10, 25, 50],
+        self.param_dist = {'min_samples': [5, 10, 25, 50], 'min_cluster_size': [5, 10, 25, 50],
                            'cluster_selection_method': ['eom', 'leaf'], 'metric': [metric],
                            'cluster_selection_epsilon': [0.05, 0.1, 0.2],
                            'prediction_data': [True] if metric == 'euclidean' else [False], 'gen_min_span_tree': [True]}
@@ -511,5 +522,5 @@ def scatter_with_sentences(df, name=None):
 
 
 if __name__ == '__main__':
-    df = get_clustering_results("..\\results\\HDBSCAN")
+    plot_clustering_results("..\\results\\HDBSCAN\\finetuned_embeddings")
     breakpoint()
