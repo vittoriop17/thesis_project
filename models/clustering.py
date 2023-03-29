@@ -451,6 +451,7 @@ class ClusteringPipeline:
         for col_name in float_columns:
             df[col_name] = df[col_name].astype(float)
         scatter_with_sentences(df, "plotly_sentences_wo_outliers.html")
+        plt.close()
         self.plot_probability_boxplot(df)
 
     def plot_analysis(self):
