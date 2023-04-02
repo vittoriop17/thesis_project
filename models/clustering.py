@@ -528,5 +528,8 @@ def scatter_with_sentences(df, name=None):
 
 
 if __name__ == '__main__':
-    plot_clustering_results("..\\results\\HDBSCAN")
+    plot_clustering_results("..\\results\\HDBSCAN", hyperparam="min_cluster_size")
+    plot_clustering_results("..\\results\\HDBSCAN", hyperparam="cluster_selection_epsilon")
+    plot_clustering_results("..\\results\\HDBSCAN", hyperparam="cluster_selection_method")
+    plot_clustering_results("..\\results\\HDBSCAN", hyperparam="min_samples")
     breakpoint()
