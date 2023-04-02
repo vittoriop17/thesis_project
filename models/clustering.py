@@ -27,8 +27,14 @@ SEED = 42
 
 
 def plot_clustering_results(folder_results, hyperparam='min_cluster_size', metric='harmonic_mean'):
-    df = get_clustering_results(folder_results)
-    sns.violinplot(df, x=hyperparam, y=metric, hue='cluster_selection_method')
+    finetuned_folder = os.path.join(folder_results, "finetuned_embeddings")
+    baseline_folder = os.path.join(folder_results, "baseline_embeddings")
+    df_ft = get_clustering_results(finetuned_folder)
+    df_baseline = get_clustering_results(baseline_folder)
+    df_ft['technique'] = ['finetuned'] * df_ft.shape[0]
+    df_baseline['technique'] = ['baseline'] * df_baseline.shape[0]
+    df = pd.concat((df_ft, df_baseline), axis=0)
+    sns.violinplot(df, x=hyperparam, y=metric, hue='technique', scale='count', scale_hue=True)
     plt.xlabel(hyperparam)
     plt.ylabel(metric)
     plt.title(f"{metric} violinplot for {hyperparam} hyperparam")
@@ -68,9 +74,9 @@ def get_clustering_results(folder):
     data = []  # list of dicts
     for filename in os.listdir(folder):
         filepath = os.path.join(folder, filename)
-        if os.path.isfile(filepath) and filename != '.gitignore':
+        if os.path.isfile(filepath) and filename != '.gitignore' and filename != 'best_params.json':
             data.append(json.load(open(filepath, "r")))
-    print(f"Total configurations: {len(data)}")
+    print(f"Folder:  {folder},\tTotal hyperparam configurations: {len(data)}")
     return pd.DataFrame.from_records(data)
 
 
@@ -339,7 +345,7 @@ class ClusteringPipeline:
             hdbscan_model.fit(X.astype('double'))
             print("\n---------------------------------------------------------\n")
             print(f"\nExperiment with params: {json.dumps(params, indent=2)}\nModel: {hdbscan_model}\n")
-            if len(set(hdbscan_model.labels_)) < 5:  # n_clusters
+            if len(set(hdbscan_model.labels_)) <= 3:  # n_clusters=3 means that we have outliers and two more clusters
                 print(f"\nNumber of clusters too low: {len(set(hdbscan_model.labels_))}\n")
                 continue
             dbcv_score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric,
@@ -522,5 +528,5 @@ def scatter_with_sentences(df, name=None):
 
 
 if __name__ == '__main__':
-    plot_clustering_results("..\\results\\HDBSCAN\\finetuned_embeddings")
+    plot_clustering_results("..\\results\\HDBSCAN")
     breakpoint()

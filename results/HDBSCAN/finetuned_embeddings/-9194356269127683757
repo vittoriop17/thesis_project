@@ -1,0 +1,14 @@
+{
+    "cluster_selection_epsilon": 0.2,
+    "cluster_selection_method": "leaf",
+    "cophenet_score": 0.6247925163987076,
+    "dbcv_score": 0.1518877259325283,
+    "gen_min_span_tree": true,
+    "harmonic_mean": 0.6740346001293126,
+    "metric": "euclidean",
+    "min_cluster_size": 10,
+    "min_samples": 25,
+    "n_clusters": 70,
+    "outliers": 10579,
+    "prediction_data": true
+}
