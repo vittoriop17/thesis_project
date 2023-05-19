@@ -40,7 +40,7 @@ class SbertFineTuning:
         :param test_set_path:
         :param dataset_name:
         :param scenario: int. {0, 1, 2}.
-            0: use original training data
+            0: use original training data (in the slides is called scenario 3)
             1: use silver set with labels inferred through CrossEncoder model
             2: use silver set with labels inferred through SIF model
         :param evaluation_only:

@@ -25,15 +25,19 @@ import seaborn as sns
 LOCATION = '/tmp/joblib'
 SEED = 42
 
+MIN_NUMBER_OF_CLUSTERS = 10
 
 def plot_clustering_results(folder_results, hyperparam='min_cluster_size', metric='harmonic_mean'):
     finetuned_folder = os.path.join(folder_results, "finetuned_embeddings")
+    finetuned_ce_folder = os.path.join(folder_results, "finetuned_embeddings_ce")
     baseline_folder = os.path.join(folder_results, "baseline_embeddings")
-    df_ft = get_clustering_results(finetuned_folder)
-    df_baseline = get_clustering_results(baseline_folder)
+    df_ft = postprocessing_grid_search_results(finetuned_folder)
+    df_ft_ce = postprocessing_grid_search_results(finetuned_ce_folder)
+    df_baseline = postprocessing_grid_search_results(baseline_folder)
     df_ft['technique'] = ['finetuned'] * df_ft.shape[0]
+    df_ft_ce['technique'] = ['finetuned_ce'] * df_ft_ce.shape[0]
     df_baseline['technique'] = ['baseline'] * df_baseline.shape[0]
-    df = pd.concat((df_ft, df_baseline), axis=0)
+    df = pd.concat((df_ft_ce, df_ft, df_baseline), axis=0)
     sns.violinplot(df, x=hyperparam, y=metric, hue='technique', scale='count', scale_hue=True)
     plt.xlabel(hyperparam)
     plt.ylabel(metric)
@@ -116,7 +120,7 @@ class ClusteringPipeline:
 
     def __init__(self, bi_encoder_path=None, training_sentences: list = None,
                  train_sentences_path=None, check_hopkins_test=False,
-                 validate_umap=False, n_components=5, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
+                 validate_umap=False, n_components=15, umap_min_dist=0.1, umap_n_neighbors=15, umap_metric='cosine',
                  hdbscan_min_samples=5, hdbscan_min_cluster_size=5, hdbscan_metric='euclidean',
                  hdbscan_cluster_method='eom', validate_hdbscan=False,
                  hdbscan_epsilon=0.2, save_embeddings=None,
@@ -130,8 +134,8 @@ class ClusteringPipeline:
         self.hdbscan_model = None
         self.original_sentence_embeddings = None
         self.save_embeddings = save_embeddings
-        self.folder_results = os.path.join("results", "HDBSCAN", "finetuned_embeddings") if model_type=='finetuned' \
-            else os.path.join("results", "HDBSCAN", "baseline_embeddings")
+        self.folder_results = os.path.join("results", "HDBSCAN", "finetuned_embeddings_ce") if model_type=='finetuned_ce' \
+            else os.path.join("results", "HDBSCAN", "baseline_embeddings") if model_type == 'baseline' else os.path.join("results", "HDBSCAN", "finetuned_embeddings")
         self.model_type = model_type
         self.umap_params = {'metric': umap_metric,
                             'n_components': self.n_components,
@@ -147,6 +151,7 @@ class ClusteringPipeline:
             self.hdbscan_params = json.load(open(os.path.join(self.folder_results, "best_params.json")))
 
         # if training_sentences is not empty, the variable path_training_sentences is not used
+        self.training_embeddings = None
         self.training_sentences = training_sentences
         self.path_training_sentences = train_sentences_path
         self.embeddings_path = embeddings_path
@@ -345,7 +350,7 @@ class ClusteringPipeline:
             hdbscan_model.fit(X.astype('double'))
             print("\n---------------------------------------------------------\n")
             print(f"\nExperiment with params: {json.dumps(params, indent=2)}\nModel: {hdbscan_model}\n")
-            if len(set(hdbscan_model.labels_)) <= 3:  # n_clusters=3 means that we have outliers and two more clusters
+            if len(set(hdbscan_model.labels_)) <= MIN_NUMBER_OF_CLUSTERS:  # n_clusters=3 means that we have outliers and two more clusters
                 print(f"\nNumber of clusters too low: {len(set(hdbscan_model.labels_))}\n")
                 continue
             dbcv_score = hdbscan.validity.validity_index(X, hdbscan_model.labels_, metric=metric,
@@ -453,6 +458,7 @@ class ClusteringPipeline:
         df = pd.DataFrame(x1_x2_sentence_cluster, columns=['x1', 'x2', 'sentence', 'cluster', 'probability'])
         for col_name in float_columns:
             df[col_name] = df[col_name].astype(float)
+        df.to_csv(os.path.join(self.folder_results, f"{self.model_type}.csv"), index=False, header=True)
         # print(f"{df.head(5)}")
         # df.info()
         scatter_with_sentences(df)
@@ -527,7 +533,27 @@ def scatter_with_sentences(df, name=None):
     fig.show()
 
 
+def postprocessing_grid_search_results(folder):
+    data = []  # list of dicts
+    for filename in os.listdir(folder):
+        filepath = os.path.join(folder, filename)
+        if os.path.isfile(filepath) and filename != '.gitignore' and filename != 'best_params.json':
+            data.append(json.load(open(filepath, "r")))
+    print(f"Folder:  {folder},\tTotal hyperparam configurations: {len(data)}")
+    df = pd.DataFrame.from_records(data)
+    # filter results between 3 and 97 percentile of n_clusters
+    percentile_3_for_n_clusters = np.percentile(df.n_clusters, 3)
+    percentile_97_for_n_clusters = np.percentile(df.n_clusters, 97)
+    df = df[percentile_3_for_n_clusters <= df.n_clusters]
+    df = df[df.n_clusters <= percentile_97_for_n_clusters]
+    harmonic_scores = list(df.harmonic_mean)
+    best_configuration = df[df.harmonic_mean==max(harmonic_scores)].iloc[0]
+    print(best_configuration)
+    return df
+
+
 if __name__ == '__main__':
+    # postprocessing_grid_search_results("..\\results\\HDBSCAN\\finetuned_embeddings")
     plot_clustering_results("..\\results\\HDBSCAN", hyperparam="min_cluster_size")
     plot_clustering_results("..\\results\\HDBSCAN", hyperparam="cluster_selection_epsilon")
     plot_clustering_results("..\\results\\HDBSCAN", hyperparam="cluster_selection_method")

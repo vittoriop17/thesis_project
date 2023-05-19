@@ -171,7 +171,7 @@ def upload_args(file_path=None):
                         help="Boolean flag. If specified, s-bert fine-tuning is not applied")
 
     # ------- Arguments for clustering (DISNEY DATASET ONLY)
-    parser.add_argument("--model_type", type=str, choices=['baseline', 'finetuned'],
+    parser.add_argument("--model_type", type=str, choices=['baseline', 'finetuned', 'finetuned_ce'],
                         help="typology of sentence-BERT model used for embeddings extraction (baseline or finetuned)")
     parser.add_argument("--train_sentences_path", type=str,
                         help="Path to the training sentences (used to train the clustering model)")

@@ -62,8 +62,9 @@ def train_validation_split(df=None, size=0.25, save=False):
     df = get_original_train_or_test_sentence_pairs(True) if df is None else df
     validation_set_len = int(len(df) * size)
     validation_set_idxs = np.random.choice(len(df), size=validation_set_len, replace=False)
+    training_set_idxs = np.array(list(set(np.arange(len(df))) - set(validation_set_idxs)))
     df_validation = df.iloc[validation_set_idxs]
-    df_train = df.iloc[~validation_set_idxs]
+    df_train = df.iloc[training_set_idxs]
     if save : df_validation[['score', 'sentence_1', 'sentence_2']].to_csv("MRPC/dev_set__scenario_0.tsv", sep="\t", header=True, index=False)
     if save : df_train[['score', 'sentence_1', 'sentence_2']].to_csv("MRPC/train_set.tsv", sep="\t", header=True, index=False)
     return df_validation
@@ -87,4 +88,4 @@ if __name__=='__main__':
     # SilverSetConstructor(list(df__without_val_and_test_sentences.sentence), name='MRPC dataset',
     #                      verbose=False, folder="MRPC", task='classification')
     df = get_original_train_or_test_sentence_pairs(True)
-    train_validation_split(df, 0.1, True)
+    train_validation_split(df, 0.25, True)
