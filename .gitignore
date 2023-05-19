@@ -10,4 +10,4 @@ results/STS
 models/DISNEY
 models/MRPC
 models/STS
-/results/HDBSCAN/BEST_FT__EOM_nc15_mcs10_ms25_15ksents/
+/results/HDBSCAN/
