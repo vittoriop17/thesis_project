@@ -25,8 +25,10 @@ It focuses on self-supervised fine-tuning of sentence embedding models. The thes
 2. **Figure 2**: Comparison of clustering outcomes with different sentence embedding models.
 
 ![Figure 1](clustering_pipe.png)
-![Figure 2](clusters_visualization.png)
+*Caption: Figure 1*
 
+![Figure 2](clusters_visualization.png)
+*Caption: Figure 2*
 
 ### Thesis Findings
 
